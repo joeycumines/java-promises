@@ -3,10 +3,7 @@ package me.joeycumines.javapromises.v1;
 /**
  * First-pass promise implementation.
  *
- * Threads:
- * - are created internally on start()
- * - are not required, run() will simply run the code in-line
- * - are re-used when possible
+ * The focus was maximum flexibility, with the ability to extend or implement promises for various use cases.
  */
 public class Promise {
 }

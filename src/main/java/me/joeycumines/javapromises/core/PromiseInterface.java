@@ -12,6 +12,10 @@ import java.util.function.Function;
  * box", with minimal additional complexity, when writing code or libraries that require asynchronous (Multi-Threaded)
  * operations.
  * <p>
+ * Usage: Promises should implement this interface in full, in whatever manner suits the application.
+ * Implementations must support chaining, and must support anything that correctly implements this interface, as results
+ * from the return statement within then and except callbacks.
+ * <p>
  * Read on to learn more, and good luck! You are probably going to need it.
  */
 public interface PromiseInterface {
@@ -48,8 +52,8 @@ public interface PromiseInterface {
 
     /**
      * Calling this method will block the current thread until this is resolved.
-     *
-     * NOTE: depending on implementation this may actually just call the run() method.
+     * <p>
+     * NOTE: All responsibility for sane use of this method lies with the caller.
      */
     public void sync();
 
