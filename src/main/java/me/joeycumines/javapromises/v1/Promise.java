@@ -214,18 +214,22 @@ public class Promise extends PromiseBase {
     private PromiseInterface build(Function callback, Function<PromiseState, Boolean> condition) {
         // create the action
         Consumer<Promise> action = (promise) -> {
-            // load the parent's (this) finalized values, to be fed into and built on for promise
-            PromiseState state = this.getState();
-            Object value = this.getValue();
+            try {
+                // load the parent's (this) finalized values, to be fed into and built on for promise
+                PromiseState state = this.getState();
+                Object value = this.getValue();
 
-            if (condition.apply(state)) {
-                //noinspection unchecked
-                promise.resolve(callback.apply(value));
-                return;
+                if (condition.apply(state)) {
+                    //noinspection unchecked
+                    promise.resolve(callback.apply(value));
+                    return;
+                }
+
+                // we didn't meet the conditions to trigger the callback, just inherit the state
+                promise.finalize(state, value);
+            } catch (Exception e) {
+                promise.reject(e);
             }
-
-            // we didn't meet the conditions to trigger the callback, just inherit the state
-            promise.finalize(state, value);
         };
 
         // build a promise which inherits our runner

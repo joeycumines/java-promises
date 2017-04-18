@@ -96,15 +96,17 @@ public abstract class PromiseBase implements PromiseInterface {
             // setup a notify then wait
 
             Function notify = (r) -> {
-                this.lock.notify();
-                return null;
+                synchronized (this.lock) {
+                    this.lock.notify();
+                    return null;
+                }
             };
 
             // do both, since only one will be triggered
             this.then(notify);
             this.except(notify);
 
-            while (PromiseState.PENDING != this.state) {
+            while (PromiseState.PENDING == this.state) {
                 try {
                     this.lock.wait();
                 } catch (InterruptedException ignored) {
