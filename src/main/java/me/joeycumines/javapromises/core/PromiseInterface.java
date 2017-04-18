@@ -20,6 +20,25 @@ import java.util.function.Function;
  */
 public interface PromiseInterface {
     /**
+     * Get the current state of the promise.
+     * <p>
+     * Checking this manually is not a preferred pattern.
+     *
+     * @return The state of the promise.
+     */
+    public PromiseState getState();
+
+    /**
+     * Get the resolved value of the promise.
+     * <p>
+     * Checking this manually is not a preferred pattern.
+     *
+     * @return The value resolved by this promise.
+     * @throws PendingValueException If this is called on a promise in a PENDING state.
+     */
+    public Object getValue();
+
+    /**
      * Specify a function to be run on successful resolution of this promise.
      * <p>
      * The callback Function will be called with the value resolved.
@@ -31,7 +50,6 @@ public interface PromiseInterface {
      *
      * @param callback Function\<Object, Object\> The operation which will be performed if the promise resolves successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
-     * @throws SelfResolutionException If the callback returned this (an illegal operation).
      */
     public PromiseInterface then(Function callback);
 
@@ -85,24 +103,5 @@ public interface PromiseInterface {
      *
      * @param type The type to cast to.
      */
-    public <T> T exceptSync(Class<T> type);
-
-    /**
-     * Get the current state of the promise.
-     * <p>
-     * Checking this manually is not a preferred pattern.
-     *
-     * @return The state of the promise.
-     */
-    public PromiseState getState();
-
-    /**
-     * Get the resolved value of the promise.
-     * <p>
-     * Checking this manually is not a preferred pattern.
-     *
-     * @return The value resolved by this promise.
-     * @throws PendingValueException If this is called on a promise in a PENDING state.
-     */
-    public Object getValue();
+    public <T extends Exception> T exceptSync(Class<T> type);
 }
