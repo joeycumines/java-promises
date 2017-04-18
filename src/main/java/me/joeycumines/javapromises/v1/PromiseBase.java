@@ -51,7 +51,7 @@ public abstract class PromiseBase implements PromiseInterface {
         }
     }
 
-    protected void finalize(PromiseState state, Object value) throws IllegalArgumentException {
+    protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, PromiseResolutionException {
         // if we are trying to set it to pending OR we are not pending, that's a paddling
         if (PromiseState.PENDING == state || PromiseState.PENDING != this.state) {
             throw new MutatedStateException(this, this.state, state);
