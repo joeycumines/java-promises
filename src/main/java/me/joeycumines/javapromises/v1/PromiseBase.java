@@ -62,6 +62,11 @@ public abstract class PromiseBase implements PromiseInterface {
             throw new PromiseResolutionException((PromiseInterface) value);
         }
 
+        // if we are trying to reject with something not an exception, that's a paddling
+        if (PromiseState.REJECTED == state && !(null == value || value instanceof Exception)) {
+            throw new IllegalArgumentException("a value was provided for rejection that was not an exception or null");
+        }
+
         // we have to do some double checked locking though, state may have actually been finalized
         synchronized (this.lock) {
             // state is actually finalized, more paddling
