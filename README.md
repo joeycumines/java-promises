@@ -1,1 +1,5 @@
-# java-promises
+# java-promises - Writing async code to the style of JavaScript Promises
+
+I kinda just sat down and wrote this, tests are on the to do list so ah it is probably completely broken
+
+TODO: write this readme
