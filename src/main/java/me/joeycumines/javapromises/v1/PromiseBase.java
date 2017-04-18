@@ -35,7 +35,7 @@ public abstract class PromiseBase implements PromiseInterface {
     }
 
     @Override
-    public Object getValue() {
+    public Object getValue() throws PendingValueException {
         // if the state is finalized we can just grab it without locking
         if (PromiseState.PENDING != this.state) {
             return this.value;

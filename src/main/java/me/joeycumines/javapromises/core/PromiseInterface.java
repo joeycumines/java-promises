@@ -36,7 +36,7 @@ public interface PromiseInterface {
      * @return The value resolved by this promise.
      * @throws PendingValueException If this is called on a promise in a PENDING state.
      */
-    public Object getValue();
+    public Object getValue() throws PendingValueException;
 
     /**
      * Specify a function to be run on successful resolution of this promise.
