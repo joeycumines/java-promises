@@ -4,7 +4,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Simple singleton example of how a localPromise runner might work.
+ * Simple singleton example of how a promise runner might work.
  */
 public class PromiseRunner implements PromiseRunnerInterface {
     private static PromiseRunner singletonInstance;
