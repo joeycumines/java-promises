@@ -51,15 +51,15 @@ public abstract class PromiseBase implements PromiseInterface {
         }
     }
 
-    protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, PromiseResolutionException {
+    protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // if we are trying to set it to pending OR we are not pending, that's a paddling
         if (PromiseState.PENDING == state || PromiseState.PENDING != this.state) {
             throw new MutatedStateException(this, this.state, state);
         }
 
-        // if we are trying to set our to another promise, that's a paddling
-        if (null != value && value instanceof PromiseInterface) {
-            throw new PromiseResolutionException((PromiseInterface) value);
+        // if we are trying to resolve to ourselves, that's a paddling
+        if (null != value && this == value) {
+            throw new SelfResolutionException((PromiseInterface) value);
         }
 
         // if we are trying to reject with something not an exception, that's a paddling
