@@ -174,42 +174,29 @@ public class Promise extends PromiseBase {
 
     @Override
     public void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+        // protected > public
         super.finalize(state, value);
 
         // by now the state of this promise is actually finalized, so we can deal with (potentially) additional threads
         this.broadcast();
     }
 
+    @Override
     public void fulfill(Object value) {
-        this.finalize(PromiseState.FULFILLED, value);
+        // protected > public
+        super.fulfill(value);
     }
 
+    @Override
     public void reject(Exception value) {
-        this.finalize(PromiseState.REJECTED, value);
+        // protected > public
+        super.reject(value);
     }
 
+    @Override
     public void resolve(Object value) {
-        if (null == value || !(value instanceof PromiseInterface)) {
-            this.fulfill(value);
-            return;
-        }
-
-        if (this == value) {
-            throw new SelfResolutionException(this);
-        }
-
-        //noinspection ConstantConditions
-        PromiseInterface promise = (PromiseInterface) value;
-
-//        // by design, we don't want to explicitly block this thread, so we can't just do this
-//        promise.sync();
-//        this.finalize(promise.getState(), promise.getValue());
-
-        // will allow this thread to continue on
-        promise.always((r) -> {
-            this.finalize(promise.getState(), promise.getValue());
-            return null;
-        });
+        // protected > public
+        super.resolve(value);
     }
 
     /**

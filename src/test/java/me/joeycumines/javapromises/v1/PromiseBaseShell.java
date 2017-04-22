@@ -13,7 +13,26 @@ import java.util.function.Function;
 public class PromiseBaseShell extends PromiseBase {
     @Override
     public void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+        // protected > public
         super.finalize(state, value);
+    }
+
+    @Override
+    public void fulfill(Object value) {
+        // protected > public
+        super.fulfill(value);
+    }
+
+    @Override
+    public void reject(Exception value) {
+        // protected > public
+        super.reject(value);
+    }
+
+    @Override
+    public void resolve(Object value) {
+        // protected > public
+        super.resolve(value);
     }
 
     @Override

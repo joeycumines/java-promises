@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 /**
  * A simple thread-safe implementation of promises sans then and except.
- *
+ * <p>
  * The protected method {@link #finalize()} should be used to set the state, by design (and part of the deliberate
  * constraints to improve logic and performance) it can only be called once, and has multiple checks to ensure sane
  * state of resolution.
@@ -63,8 +63,8 @@ public abstract class PromiseBase implements PromiseInterface {
      * @param state Must be either REJECTED or FULFILLED.
      * @param value Nullable, must be an exception (REJECTED) or any object (FULFILLED).
      * @throws IllegalArgumentException If you try to reject with something that is not an exception.
-     * @throws MutatedStateException If you try to resolve an already resolved promise, or resolve with pending.
-     * @throws SelfResolutionException If you try to resolve this.
+     * @throws MutatedStateException    If you try to resolve an already resolved promise, or resolve with pending.
+     * @throws SelfResolutionException  If you try to resolve this.
      */
     protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // if we are trying to set it to pending that's a paddling
@@ -100,6 +100,44 @@ public abstract class PromiseBase implements PromiseInterface {
         }
     }
 
+    protected void fulfill(Object value) {
+        this.finalize(PromiseState.FULFILLED, value);
+    }
+
+    protected void reject(Exception value) {
+        this.finalize(PromiseState.REJECTED, value);
+    }
+
+    protected void resolve(Object value) {
+        if (null == value || !(value instanceof PromiseInterface)) {
+            this.fulfill(value);
+            return;
+        }
+
+        if (this == value) {
+            throw new SelfResolutionException(this);
+        }
+
+        //noinspection ConstantConditions
+        PromiseInterface promise = (PromiseInterface) value;
+
+        // if the promise can be resolved immediately, do so
+        PromiseState state = promise.getState();
+        if (PromiseState.PENDING != state) {
+            this.finalize(state, promise.getValue());
+        }
+
+//        // by design, we don't want to explicitly block this thread, so we can't just do this
+//        promise.sync();
+//        this.finalize(promise.getState(), promise.getValue());
+
+        // will allow this thread to continue on
+        promise.always((r) -> {
+            this.finalize(promise.getState(), promise.getValue());
+            return null;
+        });
+    }
+
     @Override
     public void sync() {
         // if we are already done we can simply continue
@@ -113,19 +151,15 @@ public abstract class PromiseBase implements PromiseInterface {
                 return;
             }
 
-            // setup a notify then wait
-
-            Function notify = (r) -> {
+            // setup a notify
+            this.always((r) -> {
                 synchronized (this.lock) {
                     this.lock.notify();
                     return null;
                 }
-            };
+            });
 
-            // do both, since only one will be triggered
-            this.then(notify);
-            this.except(notify);
-
+            // setup a wait
             while (PromiseState.PENDING == this.state) {
                 try {
                     this.lock.wait();
