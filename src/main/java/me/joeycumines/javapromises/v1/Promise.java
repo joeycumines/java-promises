@@ -200,8 +200,15 @@ public class Promise extends PromiseBase {
 
         //noinspection ConstantConditions
         PromiseInterface promise = (PromiseInterface) value;
-        promise.sync();
-        this.finalize(promise.getState(), promise.getValue());
+
+//        // by design, we don't want to explicitly block this thread, so we can't just do this
+//        promise.sync();
+//        this.finalize(promise.getState(), promise.getValue());
+
+        promise.always((r) -> {
+            this.finalize(promise.getState(), promise.getValue());
+            return null;
+        });
     }
 
     /**
