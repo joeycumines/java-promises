@@ -67,9 +67,14 @@ public abstract class PromiseBase implements PromiseInterface {
      * @throws SelfResolutionException If you try to resolve this.
      */
     protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
-        // if we are trying to set it to pending OR we are not pending, that's a paddling
-        if (PromiseState.PENDING == state || PromiseState.PENDING != this.state) {
-            throw new MutatedStateException(this, this.state, state);
+        // if we are trying to set it to pending that's a paddling
+        if (PromiseState.PENDING == state) {
+            throw new IllegalArgumentException("the state PENDING is not a finalized state");
+        }
+
+        // if we are trying to reject with something not an exception, that's a paddling
+        if (PromiseState.REJECTED == state && !(null == value || value instanceof Exception)) {
+            throw new IllegalArgumentException("a value was provided for rejection that was not an exception or null");
         }
 
         // if we are trying to resolve to ourselves, that's a paddling
@@ -77,9 +82,9 @@ public abstract class PromiseBase implements PromiseInterface {
             throw new SelfResolutionException((PromiseInterface) value);
         }
 
-        // if we are trying to reject with something not an exception, that's a paddling
-        if (PromiseState.REJECTED == state && !(null == value || value instanceof Exception)) {
-            throw new IllegalArgumentException("a value was provided for rejection that was not an exception or null");
+        // if we are not already  pending, that's a paddling
+        if (PromiseState.PENDING != this.state) {
+            throw new MutatedStateException(this, this.state, state);
         }
 
         // we have to do some double checked locking though, state may have actually been finalized
