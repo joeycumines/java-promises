@@ -151,10 +151,10 @@ public abstract class PromiseBase implements PromiseInterface {
                 return;
             }
 
-            // setup a notify
+            // setup a notifyAll
             this.always((r) -> {
                 synchronized (this.lock) {
-                    this.lock.notify();
+                    this.lock.notifyAll();
                     return null;
                 }
             });

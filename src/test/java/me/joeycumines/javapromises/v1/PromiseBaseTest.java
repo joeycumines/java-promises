@@ -6,8 +6,11 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -343,7 +346,7 @@ public class PromiseBaseTest {
         Object value = new Object();
 
         // make inner .always work by calling it's callback after waiting a second, and setting the values correctly
-        // we also need to make it notify, since we will have to wait, otherwise the test will exit
+        // we also need to make it notifyAll, since we will have to wait, otherwise the test will exit
 
         doAnswer(new Answer<Object>() {
             @Override
@@ -357,7 +360,7 @@ public class PromiseBaseTest {
                         inner.fulfill(value);
                         callback.apply(value);
                         synchronized (inner) {
-                            inner.notify();
+                            inner.notifyAll();
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -401,7 +404,7 @@ public class PromiseBaseTest {
         Exception value = new Exception();
 
         // make inner .always work by calling it's callback after waiting a second, and setting the values correctly
-        // we also need to make it notify, since we will have to wait, otherwise the test will exit
+        // we also need to make it notifyAll, since we will have to wait, otherwise the test will exit
 
         doAnswer(new Answer<Object>() {
             @Override
@@ -415,7 +418,7 @@ public class PromiseBaseTest {
                         inner.reject(value);
                         callback.apply(value);
                         synchronized (inner) {
-                            inner.notify();
+                            inner.notifyAll();
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -457,6 +460,77 @@ public class PromiseBaseTest {
      */
     @Test
     public void testRace() {
+        PromiseBaseShell promise = new PromiseBaseShell();
 
+        Vector<Long> resultList = new Vector<Long>();
+        ArrayList<Thread> threadList = new ArrayList<Thread>();
+
+        for (int x = 0; x < 10; x++) {
+            Integer threadIndex = x;
+
+            Runnable runnable = () -> {
+                // set the value to threadIndex,
+                boolean alreadyDone = false;
+                try {
+                    promise.fulfill(threadIndex);
+                } catch (MutatedStateException e) {
+                    alreadyDone = true;
+                }
+
+                // update the time we took, and also notifyAll
+                synchronized (resultList) {
+                    resultList.set(threadIndex, System.nanoTime());
+                    resultList.notifyAll();
+                }
+            };
+
+            resultList.add(null);
+            threadList.add(new Thread(runnable));
+        }
+
+        Supplier<Boolean> isDone = () -> {
+            for (Long result : resultList) {
+                if (null == result) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        // start all the threads
+        threadList.forEach(Thread::start);
+
+        // wait until we are done
+        synchronized (resultList) {
+            while (!isDone.get()) {
+                try {
+                    resultList.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
+        Assert.assertNotNull(promise.getValue());
+
+        // this is the thread that won
+        int winner = (Integer) promise.getValue();
+
+        // get the index of the smallest value
+        Long max = null;
+        int index = -1;
+        int x = 0;
+        for (Long result: resultList) {
+            Assert.assertNotNull(result);
+            if (null == max || result < max) {
+                max = result;
+                index = x;
+            }
+            x++;
+        }
+
+        // the winner must be the one with the smallest time
+        Assert.assertEquals(index, winner);
     }
 }
