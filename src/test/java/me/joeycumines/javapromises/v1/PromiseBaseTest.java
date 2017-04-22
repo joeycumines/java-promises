@@ -469,6 +469,12 @@ public class PromiseBaseTest {
             Integer threadIndex = x;
 
             Runnable runnable = () -> {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
                 // set the value to threadIndex,
                 boolean alreadyDone = false;
                 try {
@@ -499,6 +505,9 @@ public class PromiseBaseTest {
 
         // start all the threads
         threadList.forEach(Thread::start);
+
+        // we have a sleep at the start, so it will be pending
+        Assert.assertEquals(PromiseState.PENDING, promise.getState());
 
         // wait until we are done
         synchronized (resultList) {
