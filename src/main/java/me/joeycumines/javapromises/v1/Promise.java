@@ -152,7 +152,7 @@ public class Promise extends PromiseBase {
                 throw new RunPromiseException(this, "no action was provided");
             }
 
-            if (this.isRun()) {
+            if (this.run) {
                 throw new RunPromiseException(this, "the promise was already run");
             }
 
