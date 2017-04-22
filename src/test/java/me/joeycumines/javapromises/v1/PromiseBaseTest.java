@@ -487,7 +487,7 @@ public class PromiseBaseTest {
 
                 // update the time we took, and also notifyAll
                 synchronized (resultList) {
-                    resultList.set(threadIndex, System.nanoTime());
+                    resultList.set(threadIndex, System.currentTimeMillis());
                     resultList.notifyAll();
                 }
             };
