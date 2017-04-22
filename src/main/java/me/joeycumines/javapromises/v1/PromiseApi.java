@@ -3,7 +3,8 @@ package me.joeycumines.javapromises.v1;
 /**
  * Helpers for the creation and use promises.
  * <p>
- * Note: implementation specific.
+ * Note: the internals are implementation specific (the promise implementation in this package), however everything will
+ * work for all correct promise implementations.
  */
 public class PromiseApi {
     private static PromiseApi singletonInstance;

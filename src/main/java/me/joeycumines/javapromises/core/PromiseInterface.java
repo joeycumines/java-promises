@@ -16,6 +16,10 @@ import java.util.function.Function;
  * Implementations must support chaining, and must support anything that correctly implements this interface, as results
  * from the return statement within then and except callbacks.
  * <p>
+ * A very important note: it is part of the contract of this interface that no method may block (unless specifically
+ * made to do so with a passed callback, for example), unless the method name ends in "sync", OR due to an INTERNAL lock
+ * in place to allow thread-safety.
+ * <p>
  * Read on to learn more, and good luck! You are probably going to need it.
  */
 public interface PromiseInterface {
