@@ -205,6 +205,7 @@ public class Promise extends PromiseBase {
 //        promise.sync();
 //        this.finalize(promise.getState(), promise.getValue());
 
+        // will allow this thread to continue on
         promise.always((r) -> {
             this.finalize(promise.getState(), promise.getValue());
             return null;
