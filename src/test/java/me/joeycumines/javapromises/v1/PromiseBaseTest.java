@@ -9,6 +9,7 @@ import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -465,6 +466,9 @@ public class PromiseBaseTest {
         Vector<Long> resultList = new Vector<Long>();
         ArrayList<Thread> threadList = new ArrayList<Thread>();
 
+        AtomicInteger totalSuccess = new AtomicInteger();
+        totalSuccess.set(0);
+
         for (int x = 0; x < 10; x++) {
             Integer threadIndex = x;
 
@@ -476,11 +480,10 @@ public class PromiseBaseTest {
                 }
 
                 // set the value to threadIndex,
-                boolean alreadyDone = false;
                 try {
                     promise.fulfill(threadIndex);
-                } catch (MutatedStateException e) {
-                    alreadyDone = true;
+                    totalSuccess.addAndGet(1);
+                } catch (MutatedStateException ignored) {
                 }
 
                 // update the time we took, and also notifyAll
@@ -530,7 +533,7 @@ public class PromiseBaseTest {
         Long max = null;
         int index = -1;
         int x = 0;
-        for (Long result: resultList) {
+        for (Long result : resultList) {
             Assert.assertNotNull(result);
             if (null == max || result < max) {
                 max = result;
@@ -541,5 +544,8 @@ public class PromiseBaseTest {
 
         // the winner must be the one with the smallest time
         Assert.assertEquals(index, winner);
+
+        // check that we only successfully resolved one successfully
+        Assert.assertEquals(1, totalSuccess.get());
     }
 }
