@@ -1,7 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.*;
-import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -23,16 +22,16 @@ public class PromiseBaseTest {
 
         try {
             promise.getValue();
-            Assert.fail("did not throw PendingValueException");
+            fail("did not throw PendingValueException");
         } catch (PendingValueException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
     }
 
     @Test
     public void testGetStateUnset() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -41,9 +40,9 @@ public class PromiseBaseTest {
 
         try {
             promise.finalize(PromiseState.PENDING, null);
-            Assert.fail("did not throw IllegalArgumentException");
+            fail("did not throw IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
     }
 
@@ -54,8 +53,8 @@ public class PromiseBaseTest {
 
         promise.finalize(PromiseState.FULFILLED, value);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -64,8 +63,8 @@ public class PromiseBaseTest {
 
         promise.finalize(PromiseState.FULFILLED, null);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(null, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(null, promise.getValue());
     }
 
     @Test
@@ -75,8 +74,8 @@ public class PromiseBaseTest {
 
         promise.finalize(PromiseState.REJECTED, value);
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -85,8 +84,8 @@ public class PromiseBaseTest {
 
         promise.finalize(PromiseState.REJECTED, null);
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(null, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(null, promise.getValue());
     }
 
     @Test
@@ -96,12 +95,12 @@ public class PromiseBaseTest {
 
         try {
             promise.finalize(PromiseState.REJECTED, value);
-            Assert.fail("did not throw IllegalArgumentException");
+            fail("did not throw IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -110,12 +109,12 @@ public class PromiseBaseTest {
 
         try {
             promise.finalize(PromiseState.FULFILLED, promise);
-            Assert.fail("did not throw SelfResolutionException");
+            fail("did not throw SelfResolutionException");
         } catch (SelfResolutionException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -127,13 +126,13 @@ public class PromiseBaseTest {
 
         try {
             promise.finalize(PromiseState.REJECTED, null);
-            Assert.fail("did not throw MutatedStateException");
+            fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -143,8 +142,8 @@ public class PromiseBaseTest {
 
         promise.fulfill(value);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -153,8 +152,8 @@ public class PromiseBaseTest {
 
         promise.fulfill(null);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(null, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(null, promise.getValue());
     }
 
     @Test
@@ -164,8 +163,8 @@ public class PromiseBaseTest {
 
         promise.reject(value);
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -174,8 +173,8 @@ public class PromiseBaseTest {
 
         promise.reject(null);
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(null, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(null, promise.getValue());
     }
 
     @Test
@@ -184,12 +183,12 @@ public class PromiseBaseTest {
 
         try {
             promise.fulfill(promise);
-            Assert.fail("did not throw SelfResolutionException");
+            fail("did not throw SelfResolutionException");
         } catch (SelfResolutionException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -201,13 +200,13 @@ public class PromiseBaseTest {
 
         try {
             promise.fulfill(null);
-            Assert.fail("did not throw MutatedStateException");
+            fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -219,13 +218,13 @@ public class PromiseBaseTest {
 
         try {
             promise.reject(null);
-            Assert.fail("did not throw MutatedStateException");
+            fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -237,13 +236,13 @@ public class PromiseBaseTest {
 
         try {
             promise.fulfill(null);
-            Assert.fail("did not throw MutatedStateException");
+            fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -255,13 +254,13 @@ public class PromiseBaseTest {
 
         try {
             promise.reject(null);
-            Assert.fail("did not throw MutatedStateException");
+            fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -271,8 +270,8 @@ public class PromiseBaseTest {
 
         promise.resolve(value);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -282,8 +281,8 @@ public class PromiseBaseTest {
 
         promise.resolve(value);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -293,7 +292,7 @@ public class PromiseBaseTest {
 
         promise.resolve(value);
 
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -302,12 +301,12 @@ public class PromiseBaseTest {
 
         try {
             promise.resolve(promise);
-            Assert.fail("did not throw SelfResolutionException");
+            fail("did not throw SelfResolutionException");
         } catch (SelfResolutionException e) {
-            Assert.assertNotEquals(null, e);
+            assertNotEquals(null, e);
         }
 
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
@@ -321,8 +320,8 @@ public class PromiseBaseTest {
         PromiseBaseShell promise = new PromiseBaseShell();
         promise.resolve(inner);
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -336,8 +335,8 @@ public class PromiseBaseTest {
         PromiseBaseShell promise = new PromiseBaseShell();
         promise.resolve(inner);
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -365,7 +364,7 @@ public class PromiseBaseTest {
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                        Assert.fail();
+                        fail();
                     }
                 };
 
@@ -382,7 +381,7 @@ public class PromiseBaseTest {
         promise.resolve(inner);
 
         // we should still be pending
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
 
         // wait for some fuc
         synchronized (inner) {
@@ -394,8 +393,8 @@ public class PromiseBaseTest {
             }
         }
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     @Test
@@ -423,7 +422,7 @@ public class PromiseBaseTest {
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                        Assert.fail();
+                        fail();
                     }
                 };
 
@@ -440,7 +439,7 @@ public class PromiseBaseTest {
         promise.resolve(inner);
 
         // we should still be pending
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
 
         // wait for some fuc
         synchronized (inner) {
@@ -452,8 +451,8 @@ public class PromiseBaseTest {
             }
         }
 
-        Assert.assertEquals(PromiseState.REJECTED, promise.getState());
-        Assert.assertEquals(value, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getValue());
     }
 
     /**
@@ -510,7 +509,7 @@ public class PromiseBaseTest {
         threadList.forEach(Thread::start);
 
         // we have a sleep at the start, so it will be pending
-        Assert.assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(PromiseState.PENDING, promise.getState());
 
         // wait until we are done
         synchronized (resultList) {
@@ -523,8 +522,8 @@ public class PromiseBaseTest {
             }
         }
 
-        Assert.assertEquals(PromiseState.FULFILLED, promise.getState());
-        Assert.assertNotNull(promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertNotNull(promise.getValue());
 
         // this is the thread that won
         int winner = (Integer) promise.getValue();
@@ -534,7 +533,7 @@ public class PromiseBaseTest {
         int index = -1;
         int x = 0;
         for (Long result : resultList) {
-            Assert.assertNotNull(result);
+            assertNotNull(result);
             if (null == max || result < max) {
                 max = result;
                 index = x;
@@ -543,9 +542,9 @@ public class PromiseBaseTest {
         }
 
         // the winner must be the one with the smallest time
-        Assert.assertEquals(index, winner);
+        assertEquals(index, winner);
 
         // check that we only successfully resolved one successfully
-        Assert.assertEquals(1, totalSuccess.get());
+        assertEquals(1, totalSuccess.get());
     }
 }
