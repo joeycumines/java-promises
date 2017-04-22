@@ -528,21 +528,17 @@ public class PromiseBaseTest {
         // this is the thread that won
         int winner = (Integer) promise.getValue();
 
-        // get the index of the smallest value
+        // get the smallest value in resultList
         Long max = null;
-        int index = -1;
-        int x = 0;
         for (Long result : resultList) {
             assertNotNull(result);
             if (null == max || result < max) {
                 max = result;
-                index = x;
             }
-            x++;
         }
 
-        // the winner must be the one with the smallest time
-        assertEquals(index, winner);
+        // the winner must have the same time as the max
+        assertEquals(max, resultList.get(winner));
 
         // check that we only successfully resolved one successfully
         assertEquals(1, totalSuccess.get());
