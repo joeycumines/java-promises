@@ -6,6 +6,10 @@ import java.util.function.Function;
 
 /**
  * A simple thread-safe implementation of promises sans then and except.
+ *
+ * The protected method {@link #finalize()} should be used to set the state, by design (and part of the deliberate
+ * constraints to improve logic and performance) it can only be called once, and has multiple checks to ensure sane
+ * state of resolution.
  */
 public abstract class PromiseBase implements PromiseInterface {
     /**
@@ -51,6 +55,17 @@ public abstract class PromiseBase implements PromiseInterface {
         }
     }
 
+    /**
+     * Finalize the promise.
+     * This method can only be called once, and contains checks to ensure sane state.
+     * Thread safe.
+     *
+     * @param state Must be either REJECTED or FULFILLED.
+     * @param value Nullable, must be an exception (REJECTED) or any object (FULFILLED).
+     * @throws IllegalArgumentException If you try to reject with something that is not an exception.
+     * @throws MutatedStateException If you try to resolve an already resolved promise, or resolve with pending.
+     * @throws SelfResolutionException If you try to resolve this.
+     */
     protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // if we are trying to set it to pending OR we are not pending, that's a paddling
         if (PromiseState.PENDING == state || PromiseState.PENDING != this.state) {
