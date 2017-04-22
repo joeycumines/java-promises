@@ -39,7 +39,7 @@ public interface PromiseInterface {
     public Object getValue() throws PendingValueException;
 
     /**
-     * Specify a function to be run on successful resolution of this promise.
+     * Specify a function to be run on successful resolution (fulfillment) of this promise.
      * <p>
      * The callback Function will be called with the value resolved.
      * <p>
@@ -67,6 +67,21 @@ public interface PromiseInterface {
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
     public PromiseInterface except(Function callback);
+
+    /**
+     * Specify a function to be run on ANY resolution (rejection OR fulfillment) of this promise.
+     * <p>
+     * The callback Function will be called with the value resolved.
+     * <p>
+     * This method generates a new promise, which will resolve with the value returned.
+     * <p>
+     * If the callback provided itself returns a promise, the callback promises result AND status will be propagated to
+     * this promise (blocking this until the callback promise is itself resolved).
+     *
+     * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
+     * @return A promise which will resolve after the previous promise AND any inner operations.
+     */
+    public PromiseInterface always(Function callback);
 
     /**
      * Calling this method will block the current thread until this is resolved.

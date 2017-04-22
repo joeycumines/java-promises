@@ -17,12 +17,13 @@ import java.util.function.Function;
  * The most complex part of this implementation is the action property which is explained below:
  * - action is used to simplify and provide safety for all paths
  * - action will only be executed AT MOST once, either manually, or part of internal logic
- * - action is not required
- * - executing actions are handled by the PromiseRunnerInterface
+ * - neither action nor runner is required IF you are not calling {@link #run()}, and will manage the state externally
+ * - executing actions are handled by the PromiseRunnerInterface, implement that however you wish
  */
 public class Promise extends PromiseBase {
     private static final Function<PromiseState, Boolean> ONLY_FULFILLED = (state) -> PromiseState.FULFILLED == state;
     private static final Function<PromiseState, Boolean> ONLY_REJECTED = (state) -> PromiseState.REJECTED == state;
+    private static final Function<PromiseState, Boolean> ANY_FINALIZED = (state) -> PromiseState.PENDING != state;
 
     /**
      * The action that may be executed by this promise, using the runner.
@@ -255,5 +256,10 @@ public class Promise extends PromiseBase {
     @Override
     public PromiseInterface except(Function callback) {
         return this.build(callback, ONLY_REJECTED);
+    }
+
+    @Override
+    public PromiseInterface always(Function callback) {
+        return this.build(callback, ANY_FINALIZED);
     }
 }
