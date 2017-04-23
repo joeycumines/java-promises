@@ -57,11 +57,11 @@ public class Promise extends PromiseBase {
         this(null, null);
     }
 
-    public Promise(Consumer<Promise> action) {
-        this(action, null);
+    public Promise(PromiseRunnerInterface runner) {
+        this(runner, null);
     }
 
-    public Promise(Consumer<Promise> action, PromiseRunnerInterface runner) {
+    public Promise(PromiseRunnerInterface runner, Consumer<Promise> action) {
         super();
 
         this.action = action;
@@ -229,7 +229,7 @@ public class Promise extends PromiseBase {
         };
 
         // build a promise which inherits our runner
-        Promise promise = new Promise(action, this.getRunner());
+        Promise promise = new Promise(this.getRunner(), action);
 
         // add this new promise as a subscriber
         this.subscriberQueue.offer(promise);
