@@ -77,7 +77,82 @@ public class PromiseTest {
     }
 
     @Test
-    public void testRun() {
+    public void testRunNoAction() {
+        Promise promise = new Promise();
+        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        promise.setRunner(runner);
 
+        try {
+            promise.run();
+            fail();
+        } catch (RunPromiseException e) {
+            assertNotNull(e);
+        }
+
+        verify(runner, never()).runPromise(any());
+        assertFalse(promise.isRun());
+    }
+
+    @Test
+    public void testRunNoRunner() {
+        Promise promise = new Promise();
+        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        promise.setAction((p) -> {
+        });
+
+        try {
+            promise.run();
+            fail();
+        } catch (RunPromiseException e) {
+            assertNotNull(e);
+        }
+
+        verify(runner, never()).runPromise(any());
+        assertFalse(promise.isRun());
+    }
+
+    @Test
+    public void testRunAlreadyRun() {
+        Promise promise = new Promise();
+        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        promise.setRunner(runner);
+        promise.setAction((p) -> {
+        });
+
+        assertFalse(promise.isRun());
+        promise.setRun();
+        assertTrue(promise.isRun());
+
+        try {
+            promise.run();
+            fail();
+        } catch (RunPromiseException e) {
+            assertNotNull(e);
+        }
+
+        verify(runner, never()).runPromise(any());
+        assertTrue(promise.isRun());
+    }
+
+    @Test
+    public void testRun() {
+        Promise promise = new Promise();
+        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        promise.setRunner(runner);
+        promise.setAction((p) -> {
+        });
+
+        promise.run();
+
+        verify(runner, times(1)).runPromise(promise);
+        assertTrue(promise.isRun());
+
+        // try again, will fail
+        try {
+            promise.run();
+            fail();
+        } catch (RunPromiseException e) {
+            assertNotNull(e);
+        }
     }
 }
