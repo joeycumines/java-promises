@@ -2,6 +2,7 @@ package me.joeycumines.javapromises.v1;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.*;

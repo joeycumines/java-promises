@@ -1,9 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
-import me.joeycumines.javapromises.core.MutatedStateException;
-import me.joeycumines.javapromises.core.PromiseInterface;
-import me.joeycumines.javapromises.core.SelfResolutionException;
-import me.joeycumines.javapromises.core.PromiseState;
+import me.joeycumines.javapromises.core.*;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -86,7 +83,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void setAction(Consumer<Promise> action) throws IllegalStateException {
+    public Promise setAction(Consumer<Promise> action) throws IllegalStateException {
         this.assureActionNotSet();
 
         synchronized (this.lock) {
@@ -94,6 +91,8 @@ public class Promise extends PromiseBase {
 
             this.action = action;
         }
+
+        return this;
     }
 
     public PromiseRunnerInterface getRunner() {
@@ -112,7 +111,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void setRunner(PromiseRunnerInterface runner) throws IllegalStateException {
+    public Promise setRunner(PromiseRunnerInterface runner) throws IllegalStateException {
         this.assureRunnerNotSet();
 
         synchronized (this.lock) {
@@ -120,6 +119,8 @@ public class Promise extends PromiseBase {
 
             this.runner = runner;
         }
+
+        return this;
     }
 
     public boolean isRun() {
@@ -142,7 +143,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void run() {
+    public Promise run() {
         synchronized (this.lock) {
             if (null == this.runner) {
                 throw new RunPromiseException(this, "no runner was provided");
@@ -160,6 +161,8 @@ public class Promise extends PromiseBase {
 
             this.runner.runPromise(this);
         }
+
+        return this;
     }
 
     /**
@@ -256,5 +259,14 @@ public class Promise extends PromiseBase {
     @Override
     public PromiseInterface always(Function callback) {
         return this.build(callback, ANY_FINALIZED);
+    }
+
+    /**
+     * Constructor shorthand, use the fluid-style setters + the run method.
+     *
+     * @return Promise
+     */
+    public static Promise create() {
+        return new Promise();
     }
 }
