@@ -2,8 +2,6 @@ package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.*;
 
-import java.util.function.Function;
-
 /**
  * A simple thread-safe implementation of promises sans then and except.
  * <p>
@@ -11,7 +9,7 @@ import java.util.function.Function;
  * constraints to improve logic and performance) it can only be called once, and has multiple checks to ensure sane
  * state of resolution.
  */
-public abstract class PromiseBase implements PromiseInterface {
+public abstract class PromiseBase implements Promise, PromiseTyped {
     /**
      * Use this as a lock against which you can synchronize the state.
      */
@@ -79,7 +77,7 @@ public abstract class PromiseBase implements PromiseInterface {
 
         // if we are trying to resolve to ourselves, that's a paddling
         if (null != value && this == value) {
-            throw new SelfResolutionException((PromiseInterface) value);
+            throw new SelfResolutionException((Promise) value);
         }
 
         // if we are not already  pending, that's a paddling
@@ -109,7 +107,7 @@ public abstract class PromiseBase implements PromiseInterface {
     }
 
     protected void resolve(Object value) {
-        if (null == value || !(value instanceof PromiseInterface)) {
+        if (null == value || !(value instanceof Promise)) {
             this.fulfill(value);
             return;
         }
@@ -119,7 +117,7 @@ public abstract class PromiseBase implements PromiseInterface {
         }
 
         //noinspection ConstantConditions
-        PromiseInterface promise = (PromiseInterface) value;
+        Promise promise = (Promise) value;
 
         // if the promise can be resolved immediately, do so
         PromiseState state = promise.getState();
@@ -197,7 +195,7 @@ public abstract class PromiseBase implements PromiseInterface {
     }
 
     @Override
-    public <T extends Exception> T exceptSync(Class<T> type) {
-        return type.cast(this.exceptSync());
+    public Promise getPromise() {
+        return this;
     }
 }

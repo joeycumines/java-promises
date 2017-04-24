@@ -311,7 +311,7 @@ public class PromiseBaseTest {
 
     @Test
     public void testResolvePromiseFulfill() {
-        PromiseInterface inner = mock(PromiseInterface.class);
+        Promise inner = mock(Promise.class);
         Object value = new Object();
 
         when(inner.getState()).thenReturn(PromiseState.FULFILLED);
@@ -326,7 +326,7 @@ public class PromiseBaseTest {
 
     @Test
     public void testResolvePromiseReject() {
-        PromiseInterface inner = mock(PromiseInterface.class);
+        Promise inner = mock(Promise.class);
         Object value = new Exception();
 
         when(inner.getState()).thenReturn(PromiseState.REJECTED);

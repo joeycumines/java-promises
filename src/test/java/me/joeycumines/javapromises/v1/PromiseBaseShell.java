@@ -1,7 +1,7 @@
 package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.MutatedStateException;
-import me.joeycumines.javapromises.core.PromiseInterface;
+import me.joeycumines.javapromises.core.Promise;
 import me.joeycumines.javapromises.core.PromiseState;
 import me.joeycumines.javapromises.core.SelfResolutionException;
 
@@ -36,17 +36,17 @@ public class PromiseBaseShell extends PromiseBase {
     }
 
     @Override
-    public PromiseInterface then(Function callback) {
+    public Promise then(Function callback) {
         return this;
     }
 
     @Override
-    public PromiseInterface except(Function callback) {
+    public Promise except(Function callback) {
         return this;
     }
 
     @Override
-    public PromiseInterface always(Function callback) {
+    public Promise always(Function callback) {
         return this;
     }
 }

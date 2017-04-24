@@ -21,8 +21,10 @@ import java.util.function.Function;
  * in place to allow thread-safety.
  * <p>
  * Read on to learn more, and good luck! You are probably going to need it.
+ * <p>
+ * NOTE: Any changes to this INCLUDING documentation should also be done to PromiseTyped, where relevant.
  */
-public interface PromiseInterface {
+public interface Promise {
     /**
      * Get the current state of the promise.
      * <p>
@@ -55,7 +57,7 @@ public interface PromiseInterface {
      * @param callback Function\<Object, Object\> The operation which will be performed if the promise resolves successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
-    public PromiseInterface then(Function callback);
+    public Promise then(Function callback);
 
     /**
      * Specify a function to be run on failed resolution (rejection) of this promise.
@@ -70,7 +72,7 @@ public interface PromiseInterface {
      * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
-    public PromiseInterface except(Function callback);
+    public Promise except(Function callback);
 
     /**
      * Specify a function to be run on ANY resolution (rejection OR fulfillment) of this promise.
@@ -85,7 +87,7 @@ public interface PromiseInterface {
      * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
-    public PromiseInterface always(Function callback);
+    public Promise always(Function callback);
 
     /**
      * Calling this method will block the current thread until this is resolved.
@@ -116,11 +118,4 @@ public interface PromiseInterface {
      * @return The resolved value, or null if FULFILLED.
      */
     public Exception exceptSync();
-
-    /**
-     * Functions the same as {@link #exceptSync()} but with an inbuilt type cast.
-     *
-     * @param type The type to cast to.
-     */
-    public <T extends Exception> T exceptSync(Class<T> type);
 }

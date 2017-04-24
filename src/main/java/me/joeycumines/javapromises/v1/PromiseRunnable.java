@@ -15,9 +15,9 @@ import java.util.function.Function;
  * - action is used to simplify and provide safety for all paths
  * - action will only be executed AT MOST once, either manually, or part of internal logic
  * - neither action nor runner is required IF you are not calling {@link #run()}, and will manage the state externally
- * - executing actions are handled by the PromiseRunnerInterface, implement that however you wish
+ * - executing actions are handled by the PromiseRunner, implement that however you wish
  */
-public class Promise extends PromiseBase {
+public class PromiseRunnable extends PromiseBase {
     private static final Function<PromiseState, Boolean> ONLY_FULFILLED = (state) -> PromiseState.FULFILLED == state;
     private static final Function<PromiseState, Boolean> ONLY_REJECTED = (state) -> PromiseState.REJECTED == state;
     private static final Function<PromiseState, Boolean> ANY_FINALIZED = (state) -> PromiseState.PENDING != state;
@@ -29,14 +29,14 @@ public class Promise extends PromiseBase {
      * <p>
      * Can only be set (to something non-null) once.
      */
-    private Consumer<Promise> action;
+    private Consumer<PromiseRunnable> action;
 
     /*
      * A handler instance that provides a way to "run" this promise (this.action).
      *
      * Can only be set (to something non-null) once.
      */
-    private PromiseRunnerInterface runner;
+    private PromiseRunner runner;
 
     /**
      * Has this promise been run yet.
@@ -48,26 +48,26 @@ public class Promise extends PromiseBase {
     /**
      * A list of promises that will be run on finalization of this.
      */
-    private final ConcurrentLinkedQueue<Promise> subscriberQueue;
+    private final ConcurrentLinkedQueue<PromiseRunnable> subscriberQueue;
 
-    public Promise() {
+    public PromiseRunnable() {
         this(null, null);
     }
 
-    public Promise(PromiseRunnerInterface runner) {
+    public PromiseRunnable(PromiseRunner runner) {
         this(runner, null);
     }
 
-    public Promise(PromiseRunnerInterface runner, Consumer<Promise> action) {
+    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable> action) {
         super();
 
         this.action = action;
         this.runner = runner;
         this.run = false;
-        this.subscriberQueue = new ConcurrentLinkedQueue<Promise>();
+        this.subscriberQueue = new ConcurrentLinkedQueue<PromiseRunnable>();
     }
 
-    public Consumer<Promise> getAction() {
+    public Consumer<PromiseRunnable> getAction() {
         if (null != this.action) {
             return this.action;
         }
@@ -83,7 +83,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public Promise setAction(Consumer<Promise> action) throws IllegalStateException {
+    public PromiseRunnable setAction(Consumer<PromiseRunnable> action) throws IllegalStateException {
         this.assureActionNotSet();
 
         synchronized (this.lock) {
@@ -95,7 +95,7 @@ public class Promise extends PromiseBase {
         return this;
     }
 
-    public PromiseRunnerInterface getRunner() {
+    public PromiseRunner getRunner() {
         if (null != this.runner) {
             return this.runner;
         }
@@ -111,7 +111,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public Promise setRunner(PromiseRunnerInterface runner) throws IllegalStateException {
+    public PromiseRunnable setRunner(PromiseRunner runner) throws IllegalStateException {
         this.assureRunnerNotSet();
 
         synchronized (this.lock) {
@@ -143,7 +143,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public Promise run() {
+    public PromiseRunnable run() {
         synchronized (this.lock) {
             if (null == this.runner) {
                 throw new RunPromiseException(this, "no runner was provided");
@@ -206,13 +206,13 @@ public class Promise extends PromiseBase {
      * Generate a promise, that will have it's state set, and it's result determined, by a callback triggered based on a
      * condition, otherwise if the condition fails, then it will inherit the same result as us via the subscriber queue.
      *
-     * @param callback  The callback to be executed, the value returned can be a PromiseInterface.
+     * @param callback  The callback to be executed, the value returned can be a Promise.
      * @param condition The condition to trigger if the callback will be called, based on the state.
      * @return A new promise, that will be automatically run after this resolves.
      */
-    private PromiseInterface build(Function callback, Function<PromiseState, Boolean> condition) {
+    private Promise build(Function callback, Function<PromiseState, Boolean> condition) {
         // create the action
-        Consumer<Promise> action = (promise) -> {
+        Consumer<PromiseRunnable> action = (promise) -> {
             try {
                 // load the parent's (this) finalized values, to be fed into and built on for promise
                 PromiseState state = this.getState();
@@ -232,7 +232,7 @@ public class Promise extends PromiseBase {
         };
 
         // build a promise which inherits our runner
-        Promise promise = new Promise(this.getRunner(), action);
+        PromiseRunnable promise = new PromiseRunnable(this.getRunner(), action);
 
         // add this new promise as a subscriber
         this.subscriberQueue.offer(promise);
@@ -247,26 +247,26 @@ public class Promise extends PromiseBase {
     }
 
     @Override
-    public PromiseInterface then(Function callback) {
+    public Promise then(Function callback) {
         return this.build(callback, ONLY_FULFILLED);
     }
 
     @Override
-    public PromiseInterface except(Function callback) {
+    public Promise except(Function callback) {
         return this.build(callback, ONLY_REJECTED);
     }
 
     @Override
-    public PromiseInterface always(Function callback) {
+    public Promise always(Function callback) {
         return this.build(callback, ANY_FINALIZED);
     }
 
     /**
      * Constructor shorthand, use the fluid-style setters + the run method.
      *
-     * @return Promise
+     * @return PromiseRunnable
      */
-    public static Promise create() {
-        return new Promise();
+    public static PromiseRunnable create() {
+        return new PromiseRunnable();
     }
 }

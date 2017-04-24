@@ -2,30 +2,29 @@ package me.joeycumines.javapromises.v1;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class PromiseTest {
+public class PromiseRunnableTest {
     @Test
     public void testRunner() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertEquals(null, promise.getRunner());
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         assertEquals(runner, promise.getRunner());
     }
 
     @Test
     public void testRunnerTwice() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertEquals(null, promise.getRunner());
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         try {
-            promise.setRunner(mock(PromiseRunnerInterface.class));
+            promise.setRunner(mock(PromiseRunner.class));
             fail();
         } catch (IllegalStateException e) {
             assertNotNull(e);
@@ -35,9 +34,9 @@ public class PromiseTest {
 
     @Test
     public void testAction() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertNull(promise.getAction());
-        Consumer<Promise> action = (p) -> {
+        Consumer<PromiseRunnable> action = (p) -> {
         };
         promise.setAction(action);
         assertEquals(action, promise.getAction());
@@ -45,9 +44,9 @@ public class PromiseTest {
 
     @Test
     public void testActionTwice() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertNull(promise.getAction());
-        Consumer<Promise> action = (p) -> {
+        Consumer<PromiseRunnable> action = (p) -> {
         };
         promise.setAction(action);
         try {
@@ -61,7 +60,7 @@ public class PromiseTest {
 
     @Test
     public void testSetRun() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertFalse(promise.isRun());
         promise.setRun();
         assertTrue(promise.isRun());
@@ -69,7 +68,7 @@ public class PromiseTest {
 
     @Test
     public void testSetRunTwice() {
-        Promise promise = new Promise();
+        PromiseRunnable promise = new PromiseRunnable();
         assertFalse(promise.isRun());
         promise.setRun();
         assertTrue(promise.isRun());
@@ -79,8 +78,8 @@ public class PromiseTest {
 
     @Test
     public void testRunNoAction() {
-        Promise promise = new Promise();
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
 
         try {
@@ -96,8 +95,8 @@ public class PromiseTest {
 
     @Test
     public void testRunNoRunner() {
-        Promise promise = new Promise();
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setAction((p) -> {
         });
 
@@ -114,8 +113,8 @@ public class PromiseTest {
 
     @Test
     public void testRunAlreadyRun() {
-        Promise promise = new Promise();
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         promise.setAction((p) -> {
         });
@@ -137,8 +136,8 @@ public class PromiseTest {
 
     @Test
     public void testRun() {
-        Promise promise = new Promise();
-        PromiseRunnerInterface runner = mock(PromiseRunnerInterface.class);
+        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         promise.setAction((p) -> {
         });
