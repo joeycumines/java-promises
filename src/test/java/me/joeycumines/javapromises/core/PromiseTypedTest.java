@@ -9,8 +9,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Extend this class to test a Promise implementation.
+ * Extend this class to test a PromiseTyped implementation.
  */
-public abstract class PromiseTest {
-    abstract protected PromiseApi getApi();
+public abstract class PromiseTypedTest {
+    abstract protected PromiseFactory getFactory();
 }
