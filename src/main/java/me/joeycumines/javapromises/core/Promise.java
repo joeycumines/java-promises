@@ -16,9 +16,15 @@ import java.util.function.Function;
  * Implementations must support chaining, and must support anything that correctly implements this interface, as results
  * from the return statement within then and except callbacks.
  * <p>
+ * A very important note: it is part of the contract of this interface that no method may block (unless specifically
+ * made to do so with a passed callback, for example), unless the method name ends in "sync", OR due to an INTERNAL lock
+ * in place to allow thread-safety.
+ * <p>
  * Read on to learn more, and good luck! You are probably going to need it.
+ * <p>
+ * NOTE: Any changes to this should also be made to PromiseTyped, where relevant.
  */
-public interface PromiseInterface {
+public interface Promise {
     /**
      * Get the current state of the promise.
      * <p>
@@ -39,7 +45,7 @@ public interface PromiseInterface {
     public Object getValue() throws PendingValueException;
 
     /**
-     * Specify a function to be run on successful resolution of this promise.
+     * Specify a function to be run on successful resolution (fulfillment) of this promise.
      * <p>
      * The callback Function will be called with the value resolved.
      * <p>
@@ -51,7 +57,7 @@ public interface PromiseInterface {
      * @param callback Function\<Object, Object\> The operation which will be performed if the promise resolves successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
-    public PromiseInterface then(Function callback);
+    public Promise then(Function callback);
 
     /**
      * Specify a function to be run on failed resolution (rejection) of this promise.
@@ -63,10 +69,25 @@ public interface PromiseInterface {
      * If the callback provided itself returns a promise, the callback promises result AND status will be propagated to
      * this promise (blocking this until the callback promise is itself resolved).
      *
-     * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
+     * @param callback Function\<Throwable, Object\> The operation which will be performed if the promise fails to resolve successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
-    public PromiseInterface except(Function callback);
+    public Promise except(Function callback);
+
+    /**
+     * Specify a function to be run on ANY resolution (rejection OR fulfillment) of this promise.
+     * <p>
+     * The callback Function will be called with the value resolved.
+     * <p>
+     * This method generates a new promise, which will resolve with the value returned.
+     * <p>
+     * If the callback provided itself returns a promise, the callback promises result AND status will be propagated to
+     * this promise (blocking this until the callback promise is itself resolved).
+     *
+     * @param callback Function\<Throwable, Object\> The operation which will be performed if the promise fails to resolve successfully.
+     * @return A promise which will resolve after the previous promise AND any inner operations.
+     */
+    public Promise always(Function callback);
 
     /**
      * Calling this method will block the current thread until this is resolved.
@@ -96,12 +117,5 @@ public interface PromiseInterface {
      *
      * @return The resolved value, or null if FULFILLED.
      */
-    public Exception exceptSync();
-
-    /**
-     * Functions the same as {@link #exceptSync()} but with an inbuilt type cast.
-     *
-     * @param type The type to cast to.
-     */
-    public <T extends Exception> T exceptSync(Class<T> type);
+    public Throwable exceptSync();
 }

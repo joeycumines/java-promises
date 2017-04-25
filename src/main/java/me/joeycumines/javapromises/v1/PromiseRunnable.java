@@ -1,9 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
-import me.joeycumines.javapromises.core.MutatedStateException;
-import me.joeycumines.javapromises.core.PromiseInterface;
-import me.joeycumines.javapromises.core.SelfResolutionException;
-import me.joeycumines.javapromises.core.PromiseState;
+import me.joeycumines.javapromises.core.*;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -17,12 +14,13 @@ import java.util.function.Function;
  * The most complex part of this implementation is the action property which is explained below:
  * - action is used to simplify and provide safety for all paths
  * - action will only be executed AT MOST once, either manually, or part of internal logic
- * - action is not required
- * - executing actions are handled by the PromiseRunnerInterface
+ * - neither action nor runner is required IF you are not calling {@link #run()}, and will manage the state externally
+ * - executing actions are handled by the PromiseRunner, implement that however you wish
  */
-public class Promise extends PromiseBase {
+public class PromiseRunnable extends PromiseBase {
     private static final Function<PromiseState, Boolean> ONLY_FULFILLED = (state) -> PromiseState.FULFILLED == state;
     private static final Function<PromiseState, Boolean> ONLY_REJECTED = (state) -> PromiseState.REJECTED == state;
+    private static final Function<PromiseState, Boolean> ANY_FINALIZED = (state) -> PromiseState.PENDING != state;
 
     /**
      * The action that may be executed by this promise, using the runner.
@@ -31,14 +29,14 @@ public class Promise extends PromiseBase {
      * <p>
      * Can only be set (to something non-null) once.
      */
-    private Consumer<Promise> action;
+    private Consumer<PromiseRunnable> action;
 
     /*
      * A handler instance that provides a way to "run" this promise (this.action).
      *
      * Can only be set (to something non-null) once.
      */
-    private PromiseRunnerInterface runner;
+    private PromiseRunner runner;
 
     /**
      * Has this promise been run yet.
@@ -50,26 +48,26 @@ public class Promise extends PromiseBase {
     /**
      * A list of promises that will be run on finalization of this.
      */
-    private final ConcurrentLinkedQueue<Promise> subscriberQueue;
+    private final ConcurrentLinkedQueue<PromiseRunnable> subscriberQueue;
 
-    public Promise() {
+    public PromiseRunnable() {
         this(null, null);
     }
 
-    public Promise(Consumer<Promise> action) {
-        this(action, null);
+    public PromiseRunnable(PromiseRunner runner) {
+        this(runner, null);
     }
 
-    public Promise(Consumer<Promise> action, PromiseRunnerInterface runner) {
+    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable> action) {
         super();
 
         this.action = action;
         this.runner = runner;
         this.run = false;
-        this.subscriberQueue = new ConcurrentLinkedQueue<Promise>();
+        this.subscriberQueue = new ConcurrentLinkedQueue<PromiseRunnable>();
     }
 
-    public Consumer<Promise> getAction() {
+    public Consumer<PromiseRunnable> getAction() {
         if (null != this.action) {
             return this.action;
         }
@@ -85,7 +83,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void setAction(Consumer<Promise> action) throws IllegalStateException {
+    public PromiseRunnable setAction(Consumer<PromiseRunnable> action) throws IllegalStateException {
         this.assureActionNotSet();
 
         synchronized (this.lock) {
@@ -93,9 +91,11 @@ public class Promise extends PromiseBase {
 
             this.action = action;
         }
+
+        return this;
     }
 
-    public PromiseRunnerInterface getRunner() {
+    public PromiseRunner getRunner() {
         if (null != this.runner) {
             return this.runner;
         }
@@ -111,7 +111,7 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void setRunner(PromiseRunnerInterface runner) throws IllegalStateException {
+    public PromiseRunnable setRunner(PromiseRunner runner) throws IllegalStateException {
         this.assureRunnerNotSet();
 
         synchronized (this.lock) {
@@ -119,6 +119,8 @@ public class Promise extends PromiseBase {
 
             this.runner = runner;
         }
+
+        return this;
     }
 
     public boolean isRun() {
@@ -131,17 +133,19 @@ public class Promise extends PromiseBase {
         }
     }
 
-    public void setRun() {
+    public PromiseRunnable setRun() {
         if (this.run) {
-            return;
+            return this;
         }
 
         synchronized (this.lock) {
             this.run = true;
         }
+
+        return this;
     }
 
-    public void run() {
+    public PromiseRunnable run() {
         synchronized (this.lock) {
             if (null == this.runner) {
                 throw new RunPromiseException(this, "no runner was provided");
@@ -151,14 +155,16 @@ public class Promise extends PromiseBase {
                 throw new RunPromiseException(this, "no action was provided");
             }
 
-            if (this.isRun()) {
+            if (this.run) {
                 throw new RunPromiseException(this, "the promise was already run");
             }
 
-            this.setRun();
+            this.run = true;
 
             this.runner.runPromise(this);
         }
+
+        return this;
     }
 
     /**
@@ -172,48 +178,43 @@ public class Promise extends PromiseBase {
     }
 
     @Override
-    public void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+    protected PromiseRunnable finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+        // protected > public
         super.finalize(state, value);
 
         // by now the state of this promise is actually finalized, so we can deal with (potentially) additional threads
         this.broadcast();
+
+        return this;
     }
 
-    public void fulfill(Object value) {
-        this.finalize(PromiseState.FULFILLED, value);
+    @Override
+    public PromiseRunnable reject(Throwable value) {
+        // protected > public
+        super.reject(value);
+
+        return this;
     }
 
-    public void reject(Exception value) {
-        this.finalize(PromiseState.REJECTED, value);
-    }
+    @Override
+    public PromiseRunnable resolve(Object value) {
+        // protected > public
+        super.resolve(value);
 
-    public void resolve(Object value) {
-        if (null == value || !(value instanceof PromiseInterface)) {
-            this.fulfill(value);
-            return;
-        }
-
-        if (this == value) {
-            throw new SelfResolutionException(this);
-        }
-
-        //noinspection ConstantConditions
-        PromiseInterface promise = (PromiseInterface) value;
-        promise.sync();
-        this.finalize(promise.getState(), promise.getValue());
+        return this;
     }
 
     /**
      * Generate a promise, that will have it's state set, and it's result determined, by a callback triggered based on a
      * condition, otherwise if the condition fails, then it will inherit the same result as us via the subscriber queue.
      *
-     * @param callback  The callback to be executed, the value returned can be a PromiseInterface.
+     * @param callback  The callback to be executed, the value returned can be a Promise.
      * @param condition The condition to trigger if the callback will be called, based on the state.
      * @return A new promise, that will be automatically run after this resolves.
      */
-    private PromiseInterface build(Function callback, Function<PromiseState, Boolean> condition) {
+    private Promise build(Function callback, Function<PromiseState, Boolean> condition) {
         // create the action
-        Consumer<Promise> action = (promise) -> {
+        Consumer<PromiseRunnable> action = (promise) -> {
             try {
                 // load the parent's (this) finalized values, to be fed into and built on for promise
                 PromiseState state = this.getState();
@@ -227,13 +228,13 @@ public class Promise extends PromiseBase {
 
                 // we didn't meet the conditions to trigger the callback, just inherit the state
                 promise.finalize(state, value);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 promise.reject(e);
             }
         };
 
         // build a promise which inherits our runner
-        Promise promise = new Promise(action, this.getRunner());
+        PromiseRunnable promise = new PromiseRunnable(this.getRunner(), action);
 
         // add this new promise as a subscriber
         this.subscriberQueue.offer(promise);
@@ -248,12 +249,26 @@ public class Promise extends PromiseBase {
     }
 
     @Override
-    public PromiseInterface then(Function callback) {
+    public Promise then(Function callback) {
         return this.build(callback, ONLY_FULFILLED);
     }
 
     @Override
-    public PromiseInterface except(Function callback) {
+    public Promise except(Function callback) {
         return this.build(callback, ONLY_REJECTED);
+    }
+
+    @Override
+    public Promise always(Function callback) {
+        return this.build(callback, ANY_FINALIZED);
+    }
+
+    /**
+     * Constructor shorthand, use the fluid-style setters + the run method.
+     *
+     * @return PromiseRunnable
+     */
+    public static PromiseRunnable create() {
+        return new PromiseRunnable();
     }
 }

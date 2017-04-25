@@ -1,41 +1,13 @@
 package me.joeycumines.javapromises.v1;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 /**
- * Simple singleton example of how a promise runner might work.
+ * A manager for executing promises, used internally by PromiseRunnable, created because I wanted to encapsulate the creation of
+ * threads.
+ * <p>
+ * The purpose of this is to abstract how promises are run.
+ * <p>
+ * Promises that are created by chaining then and except calls will inherit the same PromiseRunner instance.
  */
-public class PromiseRunner implements PromiseRunnerInterface {
-    private static PromiseRunner singletonInstance;
-
-    private final ExecutorService executor;
-
-    private PromiseRunner() {
-        this.executor = Executors.newCachedThreadPool();
-    }
-
-    /**
-     * @return A singleton PromiseRunner (thread safe).
-     */
-    public static PromiseRunner getInstance() {
-        // double checked locking
-        if (null == singletonInstance) {
-            synchronized (PromiseRunner.class) {
-                if (null == singletonInstance) {
-                    singletonInstance = new PromiseRunner();
-                }
-            }
-
-        }
-
-        return singletonInstance;
-    }
-
-    @Override
-    public void runPromise(Promise promise) {
-        this.executor.submit(() -> {
-            promise.getAction().accept(promise);
-        });
-    }
+public interface PromiseRunner {
+    public void runPromise(PromiseRunnable promise);
 }
