@@ -133,14 +133,16 @@ public class PromiseRunnable extends PromiseBase {
         }
     }
 
-    public void setRun() {
+    public PromiseRunnable setRun() {
         if (this.run) {
-            return;
+            return this;
         }
 
         synchronized (this.lock) {
             this.run = true;
         }
+
+        return this;
     }
 
     public PromiseRunnable run() {
