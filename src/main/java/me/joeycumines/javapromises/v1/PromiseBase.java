@@ -2,6 +2,9 @@ package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.*;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 /**
  * A simple thread-safe implementation of promises sans then and except.
  * <p>
@@ -106,34 +109,110 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
         return this;
     }
 
-    protected PromiseBase resolve(Object value) {
-        if (null == value || !(value instanceof Promise)) {
-            this.finalize(PromiseState.FULFILLED, value);
-            return this;
+    /**
+     * Recursively resolve a promise.
+     * This is private because of the complications associated with null values, and because we only need one entry
+     * point for resolve anyway (overloading gives us nothing extra dev experience wise).
+     *
+     * @param promise The promise to resolve CANNOT BE NULL.
+     */
+    private void resolvePromise(Promise promise) throws IllegalArgumentException, MutatedStateException, CircularResolutionException {
+        if (null == promise) {
+            throw new IllegalArgumentException("the promise to resolve was null");
         }
 
-        if (this == value) {
+        // we cannot resolve ourselves
+        if (this == promise) {
             throw new SelfResolutionException(this);
         }
 
-        //noinspection ConstantConditions
-        Promise promise = (Promise) value;
+        // see how far we can get; walk until we can finalize, get blocked by PENDING, or we fail due to circular refs
+        // Floyd's cycle-finding algorithm - http://stackoverflow.com/a/2663147
 
-        // if the promise can be resolved immediately, do so
-        PromiseState state = promise.getState();
-        if (PromiseState.PENDING != state) {
-            this.finalize(state, promise.getValue());
+        Promise tortoise = this;
+        Promise hare = this;
+
+        // get the next promise in a chain of FULFILLED promises
+        // if it returns the input unmodified, then it can be considered a failed step
+        Function<Promise, Promise> next = (p) -> {
+            // exit early guard to deal with the start case
+            if (p == this) {
+                return promise;
+            }
+
+            // grab the next resolved one
+            return PromiseBase.next(p);
+        };
+
+        // if we failed to resolve the promise this time, call this before exiting, it will figure things out
+        Consumer<Promise> failure = (p) -> {
+            // if we are still waiting, trigger this again after it stops PENDING
+            if (PromiseState.PENDING == p.getState()) {
+                p.always((r) -> {
+                    this.resolvePromise(promise);
+                    return null;
+                });
+
+                return;
+            }
+
+            // resolve to the state of the child; it should NEVER be a promise
+            this.finalize(p.getState(), p.getValue());
+        };
+
+        while (true) {
+            Promise step = null;
+
+            // one step for tortoise
+            step = next.apply(tortoise);
+            if (step == tortoise) {
+                // exit: no next steps were found, we stayed on the same step
+                failure.accept(step);
+                return;
+            }
+            tortoise = step;
+
+            // two steps for hare
+            step = next.apply(hare);
+            if (step == hare) {
+                // exit: no next steps were found, we stayed on the same step
+                failure.accept(step);
+                return;
+            }
+            hare = step;
+            step = next.apply(hare);
+            if (step == hare) {
+                // exit: no next steps were found, we stayed on the same step
+                failure.accept(step);
+                return;
+            }
+            hare = step;
+
+            // if they ever meet we have a circular reference
+            if (tortoise == hare) {
+                throw new CircularResolutionException(promise);
+            }
+        }
+    }
+
+    /**
+     * Resolve this with either a value (which will always fulfill) OR the value of another promise, after it resolves.
+     * <p>
+     * The check on the promise is done via instanceof, this is so that if we have say something cast with PromiseTyped,
+     * that also implements Promise, it still works as expected.
+     *
+     * @param value A value OR a NN promise, that will be resolved recursively.
+     * @return this
+     * @throws SelfResolutionException If value == this
+     * @throws MutatedStateException   If the state was already finalized.
+     */
+    protected PromiseBase resolve(Object value) throws SelfResolutionException, MutatedStateException {
+        if (value instanceof Promise) {
+            this.resolvePromise((Promise) value);
+            return this;
         }
 
-//        // by design, we don't want to explicitly block this thread, so we can't just do this
-//        promise.sync();
-//        this.finalize(promise.getState(), promise.getValue());
-
-        // will allow this thread to continue on
-        promise.always((r) -> {
-            this.finalize(promise.getState(), promise.getValue());
-            return null;
-        });
+        this.finalize(PromiseState.FULFILLED, value);
 
         return this;
     }
@@ -199,5 +278,34 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
     @Override
     public Promise getPromise() {
         return this;
+    }
+
+    /**
+     * Get the next promise in a chain.
+     * <p>
+     * If there is no next promise, or it cannot be reached, then the input promise will be returned, for performance
+     * reasons.
+     *
+     * @param promise Input promise, must not be null.
+     * @return The next promise, resolved from the input, or the same input promise if there was no next.
+     * @throws IllegalArgumentException If input promise is null.
+     */
+    private static Promise next(Promise promise) throws IllegalArgumentException {
+        if (null == promise) {
+            throw new IllegalArgumentException("the input promise cannot be null");
+        }
+
+        // getting the value will throw an exception if it is PENDING
+        if (PromiseState.FULFILLED != promise.getState()) {
+            return promise;
+        }
+
+        Object value = promise.getValue();
+
+        if (!(value instanceof Promise)) {
+            return promise;
+        }
+
+        return (Promise) value;
     }
 }
