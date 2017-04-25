@@ -189,7 +189,7 @@ public class PromiseRunnable extends PromiseBase {
     }
 
     @Override
-    public PromiseRunnable reject(Exception value) {
+    public PromiseRunnable reject(Throwable value) {
         // protected > public
         super.reject(value);
 
@@ -228,7 +228,7 @@ public class PromiseRunnable extends PromiseBase {
 
                 // we didn't meet the conditions to trigger the callback, just inherit the state
                 promise.finalize(state, value);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 promise.reject(e);
             }
         };

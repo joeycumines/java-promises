@@ -20,7 +20,7 @@ public class PromiseBaseShell extends PromiseBase {
     }
 
     @Override
-    public PromiseBaseShell reject(Exception value) {
+    public PromiseBaseShell reject(Throwable value) {
         // protected > public
         super.reject(value);
 

@@ -70,7 +70,7 @@ public class PromiseBaseTest {
     @Test
     public void testFinalizeReject() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Exception();
+        Object value = new Throwable();
 
         promise.finalize(PromiseState.REJECTED, value);
 
@@ -159,7 +159,7 @@ public class PromiseBaseTest {
     @Test
     public void testReject() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Exception value = new Exception();
+        Throwable value = new Throwable();
 
         promise.reject(value);
 
@@ -194,7 +194,7 @@ public class PromiseBaseTest {
     @Test
     public void testFulfillMutatedStateException() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Exception value = new Exception();
+        Throwable value = new Throwable();
 
         promise.finalize(PromiseState.REJECTED, value);
 
@@ -248,7 +248,7 @@ public class PromiseBaseTest {
     @Test
     public void testRejectMutatedStateExceptionDouble() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Exception value = new Exception();
+        Throwable value = new Throwable();
 
         promise.reject(value);
 
@@ -277,7 +277,7 @@ public class PromiseBaseTest {
     @Test
     public void testResolveExceptionIsFulfilled() {
         PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Exception();
+        Object value = new Throwable();
 
         promise.resolve(value);
 
@@ -327,7 +327,7 @@ public class PromiseBaseTest {
     @Test
     public void testResolvePromiseReject() {
         Promise inner = mock(Promise.class);
-        Object value = new Exception();
+        Object value = new Throwable();
 
         when(inner.getState()).thenReturn(PromiseState.REJECTED);
         when(inner.getValue()).thenReturn(value);
@@ -401,7 +401,7 @@ public class PromiseBaseTest {
     public void testResolvePromiseRejectAsync() {
         PromiseBaseShell inner = spy(new PromiseBaseShell());
 
-        Exception value = new Exception();
+        Throwable value = new Throwable();
 
         // make inner .always work by calling it's callback after waiting a second, and setting the values correctly
         // we also need to make it notifyAll, since we will have to wait, otherwise the test will exit

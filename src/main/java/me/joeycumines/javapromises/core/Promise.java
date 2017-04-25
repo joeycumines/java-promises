@@ -69,7 +69,7 @@ public interface Promise {
      * If the callback provided itself returns a promise, the callback promises result AND status will be propagated to
      * this promise (blocking this until the callback promise is itself resolved).
      *
-     * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
+     * @param callback Function\<Throwable, Object\> The operation which will be performed if the promise fails to resolve successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
     public Promise except(Function callback);
@@ -84,7 +84,7 @@ public interface Promise {
      * If the callback provided itself returns a promise, the callback promises result AND status will be propagated to
      * this promise (blocking this until the callback promise is itself resolved).
      *
-     * @param callback Function\<Exception, Object\> The operation which will be performed if the promise fails to resolve successfully.
+     * @param callback Function\<Throwable, Object\> The operation which will be performed if the promise fails to resolve successfully.
      * @return A promise which will resolve after the previous promise AND any inner operations.
      */
     public Promise always(Function callback);
@@ -117,5 +117,5 @@ public interface Promise {
      *
      * @return The resolved value, or null if FULFILLED.
      */
-    public Exception exceptSync();
+    public Throwable exceptSync();
 }

@@ -25,7 +25,7 @@ public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory
     }
 
     @Override
-    public PromiseRunnable create(BiConsumer<Consumer<Object>, Consumer<Exception>> action) {
+    public PromiseRunnable create(BiConsumer<Consumer<Object>, Consumer<Throwable>> action) {
         return PromiseRunnable.create()
                 .setRunner(this.runner)
                 .setAction((promise) -> action.accept(promise::resolve, promise::reject))
@@ -39,7 +39,7 @@ public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory
      * @return A new REJECTED promise.
      */
     @Override
-    public PromiseRunnable reject(Exception value) {
+    public PromiseRunnable reject(Throwable value) {
         return PromiseRunnable.create()
                 .setRunner(this.runner)
                 .setRun()

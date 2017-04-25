@@ -16,7 +16,7 @@ public interface PromiseFactory {
      * @param action The task to perform asynchronously.
      * @return A new promise.
      */
-    public Promise create(BiConsumer<Consumer<Object>, Consumer<Exception>> action);
+    public Promise create(BiConsumer<Consumer<Object>, Consumer<Throwable>> action);
 
     /**
      * Create a new REJECTED promise.
@@ -24,7 +24,7 @@ public interface PromiseFactory {
      * @param value The value this will reject with.
      * @return A new promise.
      */
-    public Promise reject(Exception value);
+    public Promise reject(Throwable value);
 
     /**
      * Create a new promise that will fulfill or reject, if given a promise and based on it's state, otherwise simply

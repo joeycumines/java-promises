@@ -63,7 +63,7 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
      *
      * @param state Must be either REJECTED or FULFILLED.
      * @param value Nullable, must be an exception (REJECTED) or any object (FULFILLED).
-     * @throws IllegalArgumentException If you try to reject with something that is not an exception.
+     * @throws IllegalArgumentException If you try to reject with something that is not a Throwable.
      * @throws MutatedStateException    If you try to resolve an already resolved promise, or resolve with pending.
      * @throws SelfResolutionException  If you try to resolve this.
      */
@@ -74,8 +74,8 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
         }
 
         // if we are trying to reject with something not an exception, that's a paddling
-        if (PromiseState.REJECTED == state && !(null == value || value instanceof Exception)) {
-            throw new IllegalArgumentException("a value was provided for rejection that was not an exception or null");
+        if (PromiseState.REJECTED == state && !(null == value || value instanceof Throwable)) {
+            throw new IllegalArgumentException("a value was provided for rejection that was not a Throwable or null");
         }
 
         // if we are trying to resolve to ourselves, that's a paddling
@@ -103,7 +103,7 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
         return this;
     }
 
-    protected PromiseBase reject(Exception value) {
+    protected PromiseBase reject(Throwable value) {
         this.finalize(PromiseState.REJECTED, value);
 
         return this;
@@ -265,14 +265,14 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
     }
 
     @Override
-    public Exception exceptSync() {
+    public Throwable exceptSync() {
         this.sync();
 
         if (PromiseState.REJECTED != this.getState()) {
             return null;
         }
 
-        return (Exception) this.getValue();
+        return (Throwable) this.getValue();
     }
 
     @Override
