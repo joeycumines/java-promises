@@ -22,7 +22,7 @@ import java.util.function.Function;
  * <p>
  * Read on to learn more, and good luck! You are probably going to need it.
  * <p>
- * NOTE: Any changes to this INCLUDING documentation should also be done to PromiseTyped, where relevant.
+ * NOTE: Any changes to this should also be made to PromiseTyped, where relevant.
  */
 public interface Promise {
     /**
