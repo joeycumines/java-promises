@@ -12,5 +12,5 @@ import static org.mockito.Mockito.*;
  * Extend this class to test a Promise implementation.
  */
 public abstract class PromiseTest {
-    abstract protected PromiseApi getApi();
+    abstract protected PromiseFactory getFactory();
 }
