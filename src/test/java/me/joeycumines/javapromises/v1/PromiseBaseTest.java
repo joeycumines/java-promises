@@ -140,7 +140,7 @@ public class PromiseBaseTest {
         PromiseBaseShell promise = new PromiseBaseShell();
         Object value = new Object();
 
-        promise.fulfill(value);
+        promise.finalize(PromiseState.FULFILLED, value);
 
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(value, promise.getValue());
@@ -150,7 +150,7 @@ public class PromiseBaseTest {
     public void testFulfillNull() {
         PromiseBaseShell promise = new PromiseBaseShell();
 
-        promise.fulfill(null);
+        promise.finalize(PromiseState.FULFILLED, null);
 
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(null, promise.getValue());
@@ -182,7 +182,7 @@ public class PromiseBaseTest {
         PromiseBaseShell promise = new PromiseBaseShell();
 
         try {
-            promise.fulfill(promise);
+            promise.finalize(PromiseState.FULFILLED, promise);
             fail("did not throw SelfResolutionException");
         } catch (SelfResolutionException e) {
             assertNotEquals(null, e);
@@ -199,7 +199,7 @@ public class PromiseBaseTest {
         promise.finalize(PromiseState.REJECTED, value);
 
         try {
-            promise.fulfill(null);
+            promise.finalize(PromiseState.FULFILLED, null);
             fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
             assertNotEquals(null, e);
@@ -235,7 +235,7 @@ public class PromiseBaseTest {
         promise.finalize(PromiseState.FULFILLED, value);
 
         try {
-            promise.fulfill(null);
+            promise.finalize(PromiseState.FULFILLED, null);
             fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
             assertNotEquals(null, e);
@@ -357,7 +357,7 @@ public class PromiseBaseTest {
                 Runnable runnable = () -> {
                     try {
                         TimeUnit.SECONDS.sleep(1);
-                        inner.fulfill(value);
+                        inner.finalize(PromiseState.FULFILLED, value);
                         callback.apply(value);
                         synchronized (inner) {
                             inner.notifyAll();
@@ -480,7 +480,7 @@ public class PromiseBaseTest {
 
                 // set the value to threadIndex,
                 try {
-                    promise.fulfill(threadIndex);
+                    promise.finalize(PromiseState.FULFILLED, threadIndex);
                     totalSuccess.addAndGet(1);
                 } catch (MutatedStateException ignored) {
                 }

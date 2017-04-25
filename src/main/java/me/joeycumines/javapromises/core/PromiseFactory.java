@@ -11,7 +11,7 @@ public interface PromiseFactory {
     /**
      * Create a promise, and executes it asynchronously.
      *
-     * The action parameter format is (fulfill, reject) -> // stuff
+     * The action parameter format is (resolve, reject) -> // stuff
      *
      * @param action The task to perform asynchronously.
      * @return A new promise.
@@ -27,16 +27,10 @@ public interface PromiseFactory {
     public Promise reject(Exception value);
 
     /**
-     * Create a new FULFILLED promise.
-     *
-     * @param value The value this will fulfill with.
-     * @return A new promise.
-     */
-    public Promise fulfill(Object value);
-
-    /**
      * Create a new promise that will fulfill or reject, if given a promise and based on it's state, otherwise simply
      * fulfilling with the value given.
+     *
+     * Note that this method is RECURSIVE, like the A+ Promise spec.
      *
      * @param value The value this will finalized, promises will have their state propagated.
      * @return A new promise.

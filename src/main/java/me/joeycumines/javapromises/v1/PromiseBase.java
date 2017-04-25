@@ -100,12 +100,6 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
         return this;
     }
 
-    protected PromiseBase fulfill(Object value) {
-        this.finalize(PromiseState.FULFILLED, value);
-
-        return this;
-    }
-
     protected PromiseBase reject(Exception value) {
         this.finalize(PromiseState.REJECTED, value);
 
@@ -114,7 +108,7 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
 
     protected PromiseBase resolve(Object value) {
         if (null == value || !(value instanceof Promise)) {
-            this.fulfill(value);
+            this.finalize(PromiseState.FULFILLED, value);
             return this;
         }
 

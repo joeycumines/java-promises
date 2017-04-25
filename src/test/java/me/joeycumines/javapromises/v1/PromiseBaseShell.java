@@ -20,14 +20,6 @@ public class PromiseBaseShell extends PromiseBase {
     }
 
     @Override
-    public PromiseBaseShell fulfill(Object value) {
-        // protected > public
-        super.fulfill(value);
-
-        return this;
-    }
-
-    @Override
     public PromiseBaseShell reject(Exception value) {
         // protected > public
         super.reject(value);

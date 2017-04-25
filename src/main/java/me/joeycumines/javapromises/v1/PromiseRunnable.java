@@ -178,20 +178,12 @@ public class PromiseRunnable extends PromiseBase {
     }
 
     @Override
-    public PromiseRunnable finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+    protected PromiseRunnable finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // protected > public
         super.finalize(state, value);
 
         // by now the state of this promise is actually finalized, so we can deal with (potentially) additional threads
         this.broadcast();
-
-        return this;
-    }
-
-    @Override
-    public PromiseRunnable fulfill(Object value) {
-        // protected > public
-        super.fulfill(value);
 
         return this;
     }

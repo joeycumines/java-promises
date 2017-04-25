@@ -8,12 +8,9 @@ import java.util.function.Consumer;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Extend this class to test a Promise implementation.
+ */
 public abstract class PromiseTest {
-    /**
-     * Create a promise. Implement this.
-     *
-     * @param action The task to perform asynchronously.
-     * @return A new promise.
-     */
-    protected abstract Promise create(BiConsumer<Consumer<Object>, Consumer<Object>> action);
+
 }
