@@ -176,30 +176,38 @@ public class PromiseRunnable extends PromiseBase {
     }
 
     @Override
-    public void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+    public PromiseRunnable finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // protected > public
         super.finalize(state, value);
 
         // by now the state of this promise is actually finalized, so we can deal with (potentially) additional threads
         this.broadcast();
+
+        return this;
     }
 
     @Override
-    public void fulfill(Object value) {
+    public PromiseRunnable fulfill(Object value) {
         // protected > public
         super.fulfill(value);
+
+        return this;
     }
 
     @Override
-    public void reject(Exception value) {
+    public PromiseRunnable reject(Exception value) {
         // protected > public
         super.reject(value);
+
+        return this;
     }
 
     @Override
-    public void resolve(Object value) {
+    public PromiseRunnable resolve(Object value) {
         // protected > public
         super.resolve(value);
+
+        return this;
     }
 
     /**

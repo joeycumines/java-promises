@@ -64,7 +64,7 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
      * @throws MutatedStateException    If you try to resolve an already resolved promise, or resolve with pending.
      * @throws SelfResolutionException  If you try to resolve this.
      */
-    protected void finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
+    protected PromiseBase finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
         // if we are trying to set it to pending that's a paddling
         if (PromiseState.PENDING == state) {
             throw new IllegalArgumentException("the state PENDING is not a finalized state");
@@ -96,20 +96,26 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
             this.value = value;
             this.state = state;
         }
+
+        return this;
     }
 
-    protected void fulfill(Object value) {
+    protected PromiseBase fulfill(Object value) {
         this.finalize(PromiseState.FULFILLED, value);
+
+        return this;
     }
 
-    protected void reject(Exception value) {
+    protected PromiseBase reject(Exception value) {
         this.finalize(PromiseState.REJECTED, value);
+
+        return this;
     }
 
-    protected void resolve(Object value) {
+    protected PromiseBase resolve(Object value) {
         if (null == value || !(value instanceof Promise)) {
             this.fulfill(value);
-            return;
+            return this;
         }
 
         if (this == value) {
@@ -134,6 +140,8 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
             this.finalize(promise.getState(), promise.getValue());
             return null;
         });
+
+        return this;
     }
 
     @Override
