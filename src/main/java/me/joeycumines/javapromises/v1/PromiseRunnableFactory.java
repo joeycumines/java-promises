@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 /**
  * A factory for creating PromiseRunnable instances.
  * <p>
- * Default promise runner is SimpleRunner.
+ * Default promise runner (for the global instance) is SimpleRunner.
  */
 public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory {
     private static PromiseRunnableFactory globalInstance;
@@ -32,12 +32,6 @@ public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory
                 .run();
     }
 
-    /**
-     * Create a new finalized promise, with the state REJECTED.
-     *
-     * @param value The value this will reject with.
-     * @return A new REJECTED promise.
-     */
     @Override
     public PromiseRunnable reject(Throwable value) {
         return PromiseRunnable.create()
@@ -48,7 +42,10 @@ public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory
 
     @Override
     public PromiseRunnable resolve(Object value) {
-        return null;
+        return PromiseRunnable.create()
+                .setRunner(this.runner)
+                .setRun()
+                .resolve(value);
     }
 
     /**
