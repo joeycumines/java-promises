@@ -155,7 +155,7 @@ public abstract class PromiseTest {
                     return r;
                 })
                 .except((e) -> {
-                    fail();
+                    counter.incrementAndGet();
                     return null;
                 });
 
@@ -374,7 +374,7 @@ public abstract class PromiseTest {
             }));
 
             queue.offer(promise.except((e) -> {
-                fail();
+                counter.incrementAndGet();
                 return null;
             }));
 
@@ -431,7 +431,7 @@ public abstract class PromiseTest {
 
         Consumer<Promise> setupPromise = (promise) -> {
             queue.offer(promise.then((value) -> {
-                fail();
+                counter.incrementAndGet();
                 return null;
             }));
 
@@ -473,41 +473,175 @@ public abstract class PromiseTest {
 
     @Test
     public void testResolvePrimitive() {
-
+        Promise promise = this.getFactory().resolve(22);
+        assertEquals(22, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
     @Test
     public void testResolveException() {
-
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().resolve(exception);
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
+    /**
+     * Reject must resolve immediately.
+     */
     @Test
     public void testReject() {
-
+        Throwable throwable = new Throwable();
+        Promise promise = this.getFactory().reject(throwable);
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(throwable, promise.getValue());
     }
 
     @Test
     public void testExcept() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return object;
+                });
 
+        promise.sync();
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
     public void testExceptDoubled() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return object;
+                })
+                .except((e) -> {
+                    counter.incrementAndGet();
+                    return object;
+                });
 
+        promise.sync();
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
-    public void testExceptRethrow() {
+    public void testExceptThrow() {
+        AtomicInteger counter = new AtomicInteger();
+        RuntimeException exception = new RuntimeException();
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    throw (RuntimeException) e;
+                });
 
+        promise.sync();
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testThenThrow() {
+        AtomicInteger counter = new AtomicInteger();
+        RuntimeException exception = new RuntimeException();
+        Promise promise = this.getFactory().resolve(exception)
+                .then((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    throw (RuntimeException) e;
+                });
+
+        promise.sync();
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testAlwaysThrow() {
+        AtomicInteger counter = new AtomicInteger();
+        RuntimeException exception = new RuntimeException();
+        Promise promise = this.getFactory().resolve(exception)
+                .always((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    throw (RuntimeException) e;
+                });
+
+        promise.sync();
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
     public void testExceptReturnException() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return exception;
+                })
+                .except((e) -> {
+                    counter.incrementAndGet();
+                    return object;
+                });
 
+        promise.sync();
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
     public void testExceptAfterThen() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().resolve(object)
+                .then((r) -> {
+                    assertEquals(object, r);
+                    counter.incrementAndGet();
+                    return exception;
+                })
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return null;
+                });
+
+        promise.sync();
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testExceptAfterThenNotTriggered() {
 
     }
 
@@ -555,7 +689,6 @@ public abstract class PromiseTest {
         // this will resolve a promise, but the then statement expects an integer
         Promise promise = this.getFactory().resolve(string)
                 .then((Function<Integer, Object>) (s) -> {
-                    fail();
                     return null;
                 });
 
@@ -595,7 +728,6 @@ public abstract class PromiseTest {
         // this will resolve a promise, but the then statement expects an integer
         Promise promise = this.getFactory().reject(exception)
                 .except((Function<RuntimeException, Object>) (s) -> {
-                    fail();
                     return null;
                 });
 
@@ -645,11 +777,6 @@ public abstract class PromiseTest {
     }
 
     @Test
-    public void testThenThrow() {
-
-    }
-
-    @Test
     public void testThenReturnException() {
 
     }
@@ -676,11 +803,6 @@ public abstract class PromiseTest {
 
     @Test
     public void testAlwaysFunctionsAsCatch() {
-
-    }
-
-    @Test
-    public void testAlwaysThrow() {
 
     }
 
