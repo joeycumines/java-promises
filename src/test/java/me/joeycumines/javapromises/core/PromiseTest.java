@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -641,23 +642,135 @@ public abstract class PromiseTest {
     }
 
     @Test
-    public void testExceptAfterThenNotTriggered() {
+    public void testExceptResolvesFulfilled() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().resolve(object);
+                });
 
+        promise.sync();
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
-    public void testExceptAfterExcept() {
+    public void testExceptResolvesRejected() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Exception exception1 = new Exception();
 
+        Promise promise = this.getFactory().reject(exception)
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().reject(exception1);
+                });
+
+        promise.sync();
+
+        assertEquals(exception1, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
-    public void testExceptResolves() {
+    public void testAlwaysResolvesFulfilled() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().reject(exception)
+                .always((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().resolve(object);
+                });
 
+        promise.sync();
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testAlwaysResolvesRejected() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Exception exception1 = new Exception();
+
+        Promise promise = this.getFactory().reject(exception)
+                .always((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().reject(exception1);
+                });
+
+        promise.sync();
+
+        assertEquals(exception1, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testThenResolvesFulfilled() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+
+        Promise promise = this.getFactory().resolve(exception)
+                .then((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().resolve(object);
+                });
+
+        promise.sync();
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testThenResolvesRejected() {
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+        Exception exception = new Exception();
+        Exception exception1 = new Exception();
+
+        Promise promise = this.getFactory().resolve(exception)
+                .then((e) -> {
+                    assertEquals(exception, e);
+                    counter.incrementAndGet();
+                    return this.getFactory().reject(exception1);
+                });
+
+        promise.sync();
+
+        assertEquals(exception1, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(1, counter.get());
     }
 
     @Test
     public void testThen() {
+        Promise promise = this.getFactory().resolve(3)
+                .then((Function<Integer, Integer>) (r) -> r * 2);
 
+        promise.sync();
+
+        assertEquals(6, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
     @Test
@@ -766,7 +879,6 @@ public abstract class PromiseTest {
         // this will resolve a promise, but the then statement expects an integer
         Promise promise = this.getFactory().resolve(string)
                 .always((Function<Integer, Object>) (s) -> {
-                    fail();
                     return null;
                 });
 
@@ -777,52 +889,191 @@ public abstract class PromiseTest {
     }
 
     @Test
-    public void testThenReturnException() {
-
-    }
-
-    @Test
-    public void testThenAfterThen() {
-
-    }
-
-    @Test
-    public void testThenAfterExcept() {
-
-    }
-
-    @Test
-    public void testThenResolves() {
-
-    }
-
-    @Test
     public void testAlways() {
+        Promise promise = this.getFactory().resolve(1)
+                .always((Function<Integer, Integer>)(r) -> r + 1)
+                .always((Function<Integer, Integer>)(r) -> r + 1);
 
+        promise.sync();
+
+        assertEquals(3, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
     @Test
     public void testAlwaysFunctionsAsCatch() {
+        Promise promise = this.getFactory().reject(new Throwable())
+                .always((r) -> 1)
+                .always((Function<Integer, Integer>)(r) -> r + 1)
+                .always((Function<Integer, Integer>)(r) -> r + 1);
 
+        promise.sync();
+
+        assertEquals(3, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
+    @Test
+    public void testCreateResolveSleeper() {
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            resolve.accept(true);
+        });
+
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException ignored) {
+        }
+
+        assertEquals(true, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testCreateRejectSleeper() {
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            reject.accept(exception);
+        });
+
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException ignored) {
+        }
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    /**
+     * This test will fail if promise creation is not done async to the main thread.
+     */
     @Test
     public void testSync() {
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            resolve.accept(true);
+        });
 
+        assertEquals(PromiseState.PENDING, promise.getState());
+        promise.sync();
+        assertEquals(true, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
     @Test
-    public void testSyncResolved() {
+    public void testSyncMultipleCallsNoProblem() {
+        Promise promise = this.getFactory().resolve(true);
+        promise.sync();
+        promise.sync();
+        promise.sync();
+        promise.sync();
 
+        assertEquals(true, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 
     @Test
     public void testThenSync() {
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            resolve.accept(true);
+        });
 
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(true, promise.thenSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testThenSyncOpposite() {
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            reject.accept(exception);
+        });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(null, promise.thenSync());
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    @Test
+    public void testThenSyncCast() {
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            resolve.accept("big hello");
+        });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+
+        String result = promise.thenSync(String.class);
+
+        assertEquals("big hello", result);
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testThenSyncCastOpposite() {
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            reject.accept(exception);
+        });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+
+        String result = promise.thenSync(String.class);
+
+        assertEquals(null, result);
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
     }
 
     @Test
     public void testExceptSync() {
+        Exception exception = new Exception();
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            reject.accept(exception);
+        });
 
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(exception, promise.exceptSync());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    @Test
+    public void testExceptSyncOpposite() {
+        Promise promise = this.getFactory().create((resolve, reject) -> {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ignored) {
+            }
+            resolve.accept(true);
+        });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(null, promise.exceptSync());
+        assertEquals(true, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
     }
 }
