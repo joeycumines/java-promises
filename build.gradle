@@ -46,4 +46,11 @@ compileTestJava {
 // run this to generate the java doc
 task generateDoc(type: Javadoc) {
     source = sourceSets.main.allJava
+    doLast {
+        delete './docs'
+        copy {
+            from './build/docs/javadoc'
+            into './docs'
+        }
+    }
 }
