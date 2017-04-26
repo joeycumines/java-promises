@@ -3,6 +3,7 @@ package me.joeycumines.javapromises.core;
 import me.joeycumines.javapromises.v1.BlockingPromise;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -176,7 +177,7 @@ public abstract class PromiseTest {
                     assertEquals(0, counter.getAndIncrement());
                     throw exception1;
                 })
-                .except((Function<Throwable, Promise>)(e) -> {
+                .except((Function<Throwable, Promise>) (e) -> {
                     assertEquals(exception1, e);
                     assertEquals(1, counter.getAndIncrement());
                     return this.getFactory().reject(exception2);
@@ -301,6 +302,124 @@ public abstract class PromiseTest {
     @Test
     public void testThen() {
 
+    }
+
+    @Test
+    public void testThenCast() {
+        AtomicInteger counter = new AtomicInteger();
+        String string = "example";
+
+        Promise promise = this.getFactory().resolve(string)
+                .then((Function<String, Object>) (s) -> {
+                    assertEquals(0, counter.getAndIncrement());
+                    assertEquals("example", s);
+                    return s + "_test";
+                });
+
+        promise.sync();
+
+        assertEquals(1, counter.getAndIncrement());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals("example_test", promise.getValue());
+    }
+
+    /**
+     * Anonymous functions that are cast incorrectly will resolve with an exception.
+     */
+    @Test
+    public void testThenCastException() {
+        String string = "example";
+
+        // this will resolve a promise, but the then statement expects an integer
+        Promise promise = this.getFactory().resolve(string)
+                .then((Function<Integer, Object>) (s) -> {
+                    fail();
+                    return null;
+                });
+
+        promise.sync();
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertTrue(promise.getValue() instanceof ClassCastException);
+    }
+
+    @Test
+    public void testExceptCast() {
+        AtomicInteger counter = new AtomicInteger();
+        IOException exception = new IOException();
+        Object object = new Object();
+
+        Promise promise = this.getFactory().reject(exception)
+                .except((Function<Exception, Object>) (e) -> {
+                    assertEquals(0, counter.getAndIncrement());
+                    assertEquals(exception, e);
+                    return object;
+                });
+
+        promise.sync();
+
+        assertEquals(1, counter.getAndIncrement());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(object, promise.getValue());
+    }
+
+    /**
+     * Anonymous functions that are cast incorrectly will resolve with an exception.
+     */
+    @Test
+    public void testExceptCastException() {
+        IOException exception = new IOException();
+
+        // this will resolve a promise, but the then statement expects an integer
+        Promise promise = this.getFactory().reject(exception)
+                .except((Function<RuntimeException, Object>) (s) -> {
+                    fail();
+                    return null;
+                });
+
+        promise.sync();
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertNotEquals(exception, promise.getValue());
+        assertTrue(promise.getValue() instanceof ClassCastException);
+    }
+
+    @Test
+    public void testAlwaysCast() {
+        AtomicInteger counter = new AtomicInteger();
+        String string = "example";
+
+        Promise promise = this.getFactory().resolve(string)
+                .always((Function<String, Object>) (s) -> {
+                    assertEquals(0, counter.getAndIncrement());
+                    return s + "_test";
+                });
+
+        promise.sync();
+
+        assertEquals(1, counter.getAndIncrement());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals("example_test", promise.getValue());
+    }
+
+    /**
+     * Anonymous functions that are cast incorrectly will resolve with an exception.
+     */
+    @Test
+    public void testAlwaysCastException() {
+        String string = "example";
+
+        // this will resolve a promise, but the then statement expects an integer
+        Promise promise = this.getFactory().resolve(string)
+                .always((Function<Integer, Object>) (s) -> {
+                    fail();
+                    return null;
+                });
+
+        promise.sync();
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertTrue(promise.getValue() instanceof ClassCastException);
     }
 
     @Test
