@@ -4,7 +4,9 @@ import me.joeycumines.javapromises.v1.BlockingPromise;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
@@ -108,7 +110,7 @@ public abstract class PromiseTest {
     }
 
     /**
-     * Resolve an object.
+     * Ensure you can resolve an object.
      */
     @Test
     public void testResolve() {
@@ -234,19 +236,239 @@ public abstract class PromiseTest {
     }
 
     /**
-     * Test that promises will resolve values of other promises.
+     * Test that promises will resolve values of other promises, and will propagate state.
+     * <p>
+     * If promises are already resolved already they MUST be resolved WITHOUT needing to call sync.
+     * <p>
+     * Note that normally {@link Promise#getValue()} SHOULD NEVER return a promise.
      */
     @Test
-    public void testResolvePromise() {
+    public void testResolvePromiseFulfilled() {
+        Object object = new Object();
 
+        Promise input = mock(Promise.class);
+        when(input.getValue()).thenReturn(object);
+        when(input.getState()).thenReturn(PromiseState.FULFILLED);
+
+        Promise promise = this.getFactory().resolve(input);
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * Test that promises will resolve values of other promises, and will propagate state.
+     * <p>
+     * If promises are already resolved already they MUST be resolved WITHOUT needing to call sync.
+     * <p>
+     * Note that normally {@link Promise#getValue()} SHOULD NEVER return a promise.
+     */
+    @Test
+    public void testResolvePromiseRejected() {
+        Exception exception = new Exception();
+
+        Promise input = mock(Promise.class);
+        when(input.getValue()).thenReturn(exception);
+        when(input.getState()).thenReturn(PromiseState.REJECTED);
+
+        Promise promise = this.getFactory().resolve(input);
+
+        assertEquals(exception, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
     }
 
     /**
      * Test that promises will resolve values of other promises, as far as necessary.
+     * <p>
+     * Note that normally {@link Promise#getValue()} SHOULD NEVER return a promise.
      */
     @Test
-    public void testResolvePromiseDeep() {
+    public void testResolvePromiseDeepFulfilled() {
+        Function<Object, Promise> createPromise = (object) -> {
+            Promise input = mock(Promise.class);
+            when(input.getValue()).thenReturn(object);
+            when(input.getState()).thenReturn(PromiseState.FULFILLED);
 
+            return input;
+        };
+
+        Object object = new Object();
+        Promise promise = this.getFactory().resolve(createPromise.apply(createPromise.apply(createPromise.apply(createPromise.apply(object)))));
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * Test that promises will resolve values of other promises, as far as necessary.
+     * <p>
+     * Note that normally {@link Promise#getValue()} SHOULD NEVER return a promise.
+     */
+    @Test
+    public void testResolvePromiseDeepRejected() {
+        Function<Object, Promise> createPromise = (object) -> {
+            Promise input = mock(Promise.class);
+            when(input.getValue()).thenReturn(object);
+            when(input.getState()).thenReturn(PromiseState.FULFILLED);
+
+            return input;
+        };
+
+        Object object = new Exception();
+        // we have to reject the last one
+        Promise input = mock(Promise.class);
+        when(input.getValue()).thenReturn(object);
+        when(input.getState()).thenReturn(PromiseState.REJECTED);
+        Promise promise = this.getFactory().resolve(createPromise.apply(createPromise.apply(createPromise.apply(createPromise.apply(input)))));
+
+        assertEquals(object, promise.getValue());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    /**
+     * Malformed promises that do not return exceptions when rejected, should throw an exception when they are used as
+     * a parameter for resolve.
+     */
+    @Test
+    public void testResolvePromiseRejectedNonThrowableGivesException() {
+        Object object = new Object();
+
+        Promise input = mock(Promise.class);
+        when(input.getValue()).thenReturn(object);
+        when(input.getState()).thenReturn(PromiseState.REJECTED);
+
+        try {
+            this.getFactory().resolve(input);
+            fail("needs to throw some form of Exception");
+        } catch (Exception e) {
+            assertNotNull(e);
+        }
+    }
+
+    /**
+     * Test the async resolution of promises that are waiting works as expected.
+     * <p>
+     * Snuck in some then / catch / always tests too.
+     */
+    @Test
+    public void testResolvePromiseDeepWaitFulfilled() {
+        BlockingPromise blocker = new BlockingPromise(this.getFactory());
+
+        Promise promise1 = this.getFactory().resolve(blocker.getPromise());
+        Promise promise2 = this.getFactory().resolve(promise1);
+
+        assertEquals(PromiseState.PENDING, blocker.getPromise().getState());
+        assertEquals(PromiseState.PENDING, promise1.getState());
+        assertEquals(PromiseState.PENDING, promise2.getState());
+
+        AtomicInteger counter = new AtomicInteger();
+        Object object = new Object();
+
+        ConcurrentLinkedQueue<Promise> queue = new ConcurrentLinkedQueue<Promise>();
+
+        Consumer<Promise> setupPromise = (promise) -> {
+            queue.offer(promise.then((value) -> {
+                assertEquals(object, value);
+                assertTrue(6 >= counter.incrementAndGet());
+                return null;
+            }));
+
+            queue.offer(promise.except((e) -> {
+                fail();
+                return null;
+            }));
+
+            queue.offer(promise.always((value) -> {
+                assertEquals(object, value);
+                assertTrue(6 >= counter.incrementAndGet());
+                return null;
+            }));
+        };
+
+        setupPromise.accept(blocker.getPromise());
+        setupPromise.accept(promise1);
+        setupPromise.accept(promise2);
+
+        assertEquals(PromiseState.PENDING, blocker.getPromise().getState());
+        assertEquals(PromiseState.PENDING, promise1.getState());
+        assertEquals(PromiseState.PENDING, promise2.getState());
+
+        blocker.resolve(object);
+
+        // wait for all the inner ones to resolve, for the counter
+        queue.forEach(Promise::sync);
+
+        assertEquals(PromiseState.FULFILLED, blocker.getPromise().getState());
+        assertEquals(PromiseState.FULFILLED, promise1.getState());
+        assertEquals(PromiseState.FULFILLED, promise2.getState());
+        assertEquals(object, blocker.getPromise().getValue());
+        assertEquals(object, promise1.getValue());
+        assertEquals(object, promise2.getValue());
+
+        assertEquals(6, counter.get());
+    }
+
+    /**
+     * Test the async resolution of promises that are waiting works as expected.
+     * <p>
+     * Snuck in some then / catch / always tests too.
+     */
+    @Test
+    public void testResolvePromiseDeepWaitRejected() {
+        BlockingPromise blocker = new BlockingPromise(this.getFactory());
+
+        Promise promise1 = this.getFactory().resolve(blocker.getPromise());
+        Promise promise2 = this.getFactory().resolve(promise1);
+
+        assertEquals(PromiseState.PENDING, blocker.getPromise().getState());
+        assertEquals(PromiseState.PENDING, promise1.getState());
+        assertEquals(PromiseState.PENDING, promise2.getState());
+
+        AtomicInteger counter = new AtomicInteger();
+        Throwable exception = new Exception();
+
+        ConcurrentLinkedQueue<Promise> queue = new ConcurrentLinkedQueue<Promise>();
+
+        Consumer<Promise> setupPromise = (promise) -> {
+            queue.offer(promise.then((value) -> {
+                fail();
+                return null;
+            }));
+
+            queue.offer(promise.except((value) -> {
+                assertEquals(exception, value);
+                assertTrue(6 >= counter.incrementAndGet());
+                return null;
+            }));
+
+            queue.offer(promise.always((value) -> {
+                assertEquals(exception, value);
+                assertTrue(6 >= counter.incrementAndGet());
+                return null;
+            }));
+        };
+
+        setupPromise.accept(blocker.getPromise());
+        setupPromise.accept(promise1);
+        setupPromise.accept(promise2);
+
+        assertEquals(PromiseState.PENDING, blocker.getPromise().getState());
+        assertEquals(PromiseState.PENDING, promise1.getState());
+        assertEquals(PromiseState.PENDING, promise2.getState());
+
+        blocker.reject(exception);
+
+        // wait for all the inner ones to resolve, for the counter
+        queue.forEach(Promise::sync);
+
+        assertEquals(PromiseState.REJECTED, blocker.getPromise().getState());
+        assertEquals(PromiseState.REJECTED, promise1.getState());
+        assertEquals(PromiseState.REJECTED, promise2.getState());
+        assertEquals(exception, blocker.getPromise().getValue());
+        assertEquals(exception, promise1.getValue());
+        assertEquals(exception, promise2.getValue());
+
+        assertEquals(6, counter.get());
     }
 
     @Test
