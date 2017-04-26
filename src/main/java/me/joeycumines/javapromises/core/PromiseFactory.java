@@ -34,6 +34,7 @@ public interface PromiseFactory {
      *
      * @param value The value this will finalized, promises will have their state propagated.
      * @return A new promise.
+     * @throws CircularResolutionException If there are circular references of FULFILLED promises.
      */
-    public Promise resolve(Object value);
+    public Promise resolve(Object value) throws CircularResolutionException;
 }

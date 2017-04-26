@@ -1,5 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
+import me.joeycumines.javapromises.core.CircularResolutionException;
 import me.joeycumines.javapromises.core.PromiseApi;
 import me.joeycumines.javapromises.core.PromiseFactory;
 
@@ -41,7 +42,7 @@ public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory
     }
 
     @Override
-    public PromiseRunnable resolve(Object value) {
+    public PromiseRunnable resolve(Object value) throws CircularResolutionException {
         return PromiseRunnable.create()
                 .setRunner(this.runner)
                 .setRun()

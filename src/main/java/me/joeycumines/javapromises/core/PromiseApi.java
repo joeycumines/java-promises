@@ -8,4 +8,8 @@ import me.joeycumines.javapromises.core.PromiseFactory;
  * Note: This class is designed to work with any promise implementation, make a concrete class extending this.
  */
 public abstract class PromiseApi implements PromiseFactory {
+    // attempt
+    // each
+    // all
+    // race
 }

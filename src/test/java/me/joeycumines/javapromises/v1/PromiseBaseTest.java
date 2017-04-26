@@ -351,7 +351,7 @@ public class PromiseBaseTest {
         doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) {
-                Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
+                @SuppressWarnings("unchecked") Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
 
                 // do the rest of this in a new thread
                 Runnable runnable = () -> {
@@ -409,7 +409,7 @@ public class PromiseBaseTest {
         doAnswer(new Answer<Object>() {
             @Override
             public Object answer(InvocationOnMock invocation) {
-                Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
+                @SuppressWarnings("unchecked") Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
 
                 // do the rest of this in a new thread
                 Runnable runnable = () -> {

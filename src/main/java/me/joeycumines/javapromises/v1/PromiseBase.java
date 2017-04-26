@@ -146,8 +146,10 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
 
         // if we failed to resolve the promise this time, call this before exiting, it will figure things out
         Consumer<Promise> failure = (p) -> {
+            PromiseState state = p.getState();
+
             // if we are still waiting, trigger this again after it stops PENDING
-            if (PromiseState.PENDING == p.getState()) {
+            if (PromiseState.PENDING == state) {
                 p.always((r) -> {
                     this.resolvePromise(promise);
                     return null;
@@ -156,8 +158,14 @@ public abstract class PromiseBase implements Promise, PromiseTyped {
                 return;
             }
 
+            Object value = p.getValue();
+
+            if (p == value) {
+                throw new CircularResolutionException(promise);
+            }
+
             // resolve to the state of the child; it should NEVER be a promise
-            this.finalize(p.getState(), p.getValue());
+            this.finalize(state, value);
         };
 
         while (true) {

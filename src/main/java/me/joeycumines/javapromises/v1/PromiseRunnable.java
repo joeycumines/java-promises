@@ -212,7 +212,7 @@ public class PromiseRunnable extends PromiseBase {
      * @param condition The condition to trigger if the callback will be called, based on the state.
      * @return A new promise, that will be automatically run after this resolves.
      */
-    private Promise build(Function callback, Function<PromiseState, Boolean> condition) {
+    private Promise build(Function<Object, Object> callback, Function<PromiseState, Boolean> condition) {
         // create the action
         Consumer<PromiseRunnable> action = (promise) -> {
             try {
@@ -221,7 +221,6 @@ public class PromiseRunnable extends PromiseBase {
                 Object value = this.getValue();
 
                 if (condition.apply(state)) {
-                    //noinspection unchecked
                     promise.resolve(callback.apply(value));
                     return;
                 }
@@ -248,16 +247,19 @@ public class PromiseRunnable extends PromiseBase {
         return promise;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Promise then(Function callback) {
         return this.build(callback, ONLY_FULFILLED);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Promise except(Function callback) {
         return this.build(callback, ONLY_REJECTED);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Promise always(Function callback) {
         return this.build(callback, ANY_FINALIZED);

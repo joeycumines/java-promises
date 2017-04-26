@@ -32,3 +32,18 @@ task wrapper(type: Wrapper) {
     gradleVersion = '3.5'
 }
 // end::wrapper[]
+
+// give more info about unchecked and depreciation warnings
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+}
+compileTestJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+}
+
+// run this to generate the java doc
+task generateDoc(type: Javadoc) {
+    source = sourceSets.main.allJava
+}

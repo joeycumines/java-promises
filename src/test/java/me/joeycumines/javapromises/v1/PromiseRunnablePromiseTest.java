@@ -1,6 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
-import me.joeycumines.javapromises.core.PromiseFactory;
+import me.joeycumines.javapromises.core.CircularResolutionException;
 import me.joeycumines.javapromises.core.PromiseState;
 import me.joeycumines.javapromises.core.PromiseTest;
 import org.junit.Test;
