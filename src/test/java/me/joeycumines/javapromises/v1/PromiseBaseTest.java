@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
@@ -17,140 +17,40 @@ import static org.mockito.Mockito.*;
 
 public class PromiseBaseTest {
     @Test
-    public void testGetValuePendingValueException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-
-        try {
-            promise.getValue();
-            fail("did not throw PendingValueException");
-        } catch (PendingValueException e) {
-            assertNotEquals(null, e);
-        }
-    }
-
-    @Test
     public void testGetStateUnset() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
         assertEquals(PromiseState.PENDING, promise.getState());
     }
 
     @Test
-    public void testFinalizePendingIllegalArgumentException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-
-        try {
-            promise.finalize(PromiseState.PENDING, null);
-            fail("did not throw IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            assertNotEquals(null, e);
-        }
+    public void testGetValueUnset() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+        assertNull(promise.getValue());
     }
 
     @Test
-    public void testFinalizeFulfill() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        promise.finalize(PromiseState.FULFILLED, value);
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testFinalizeFulfillNull() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-
-        promise.finalize(PromiseState.FULFILLED, null);
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(null, promise.getValue());
-    }
-
-    @Test
-    public void testFinalizeReject() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Throwable();
-
-        promise.finalize(PromiseState.REJECTED, value);
-
-        assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testFinalizeRejectNull() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-
-        promise.finalize(PromiseState.REJECTED, null);
-
-        assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(null, promise.getValue());
-    }
-
-    @Test
-    public void testFinalizeRejectIllegalArgumentException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        try {
-            promise.finalize(PromiseState.REJECTED, value);
-            fail("did not throw IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.PENDING, promise.getState());
-    }
-
-    @Test
-    public void testFinalizeSelfResolutionException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-
-        try {
-            promise.finalize(PromiseState.FULFILLED, promise);
-            fail("did not throw SelfResolutionException");
-        } catch (SelfResolutionException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.PENDING, promise.getState());
-    }
-
-    @Test
-    public void testFinalizeMutatedStateException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        promise.finalize(PromiseState.FULFILLED, value);
-
-        try {
-            promise.finalize(PromiseState.REJECTED, null);
-            fail("did not throw MutatedStateException");
-        } catch (MutatedStateException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
+    public void testGetExceptionUnset() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+        assertNull(promise.getException());
     }
 
     @Test
     public void testFulfill() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
         Object value = new Object();
 
-        promise.finalize(PromiseState.FULFILLED, value);
+        promise.fulfill(value);
 
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(value, promise.getValue());
+        assertNull(promise.getException());
     }
 
     @Test
     public void testFulfillNull() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
 
-        promise.finalize(PromiseState.FULFILLED, null);
+        promise.fulfill(null);
 
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(null, promise.getValue());
@@ -158,190 +58,267 @@ public class PromiseBaseTest {
 
     @Test
     public void testReject() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
         Throwable value = new Throwable();
 
         promise.reject(value);
 
         assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(value, promise.getValue());
+        assertEquals(value, promise.getException());
+        assertNull(promise.getValue());
     }
 
     @Test
     public void testRejectNull() {
         PromiseBaseShell promise = new PromiseBaseShell();
 
-        promise.reject(null);
+        try {
+            promise.reject(null);
+            fail();
+        } catch (NullPointerException e) {
+            assertNotNull(e);
+        }
 
-        assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(null, promise.getValue());
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
     }
 
     @Test
     public void testFulfillSelfResolutionException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
 
         try {
-            promise.finalize(PromiseState.FULFILLED, promise);
+            promise.fulfill(promise);
             fail("did not throw SelfResolutionException");
         } catch (SelfResolutionException e) {
-            assertNotEquals(null, e);
+            assertNotNull(e);
         }
 
         assertEquals(PromiseState.PENDING, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
     }
 
     @Test
     public void testFulfillMutatedStateException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Throwable value = new Throwable();
-
-        promise.finalize(PromiseState.REJECTED, value);
-
-        try {
-            promise.finalize(PromiseState.FULFILLED, null);
-            fail("did not throw MutatedStateException");
-        } catch (MutatedStateException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testRejectMutatedStateException() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        promise.finalize(PromiseState.FULFILLED, value);
-
-        try {
-            promise.reject(null);
-            fail("did not throw MutatedStateException");
-        } catch (MutatedStateException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testFulfillMutatedStateExceptionDouble() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        promise.finalize(PromiseState.FULFILLED, value);
-
-        try {
-            promise.finalize(PromiseState.FULFILLED, null);
-            fail("did not throw MutatedStateException");
-        } catch (MutatedStateException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testRejectMutatedStateExceptionDouble() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
         Throwable value = new Throwable();
 
         promise.reject(value);
 
         try {
-            promise.reject(null);
+            promise.fulfill(null);
+            fail("did not throw MutatedStateException");
+        } catch (MutatedStateException e) {
+            assertNotNull(e);
+        }
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(value, promise.getException());
+        assertNull(promise.getValue());
+    }
+
+    @Test
+    public void testRejectMutatedStateException() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+        Object value = new Object();
+
+        promise.fulfill(value);
+
+        try {
+            promise.reject(new RuntimeException());
+            fail("did not throw MutatedStateException");
+        } catch (MutatedStateException e) {
+            assertNotNull(e);
+        }
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
+        assertNull(promise.getException());
+    }
+
+    @Test
+    public void testResolveNull() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+
+        promise.resolve(null);
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
+        assertNull(promise.thenSync());
+        assertNull(promise.exceptSync());
+    }
+
+    @Test
+    public void testResolvePromiseRejected() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+
+        Throwable e = new Throwable();
+
+        @SuppressWarnings("unchecked") Promise<Integer> value = mock(Promise.class);
+        when(value.getState()).thenReturn(PromiseState.REJECTED);
+        when(value.exceptSync()).thenReturn(e);
+
+        promise.resolve(value);
+
+        verify(value, atLeastOnce()).getState();
+        //noinspection ThrowableNotThrown
+        verify(value, atLeastOnce()).exceptSync();
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertNull(promise.getValue());
+        assertEquals(e, promise.getException());
+        assertNull(promise.thenSync());
+        assertEquals(e, promise.exceptSync());
+    }
+
+    @Test
+    public void testResolvePromiseFulfilled() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+
+        Integer a = 23;
+
+        @SuppressWarnings("unchecked") Promise<Integer> value = mock(Promise.class);
+        when(value.getState()).thenReturn(PromiseState.FULFILLED);
+        when(value.thenSync()).thenReturn(a);
+
+        promise.resolve(value);
+
+        verify(value, atLeastOnce()).getState();
+        verify(value, atLeastOnce()).thenSync();
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(a, promise.getValue());
+        assertNull(promise.getException());
+        assertEquals(a, promise.thenSync());
+        assertNull(promise.exceptSync());
+    }
+
+    @Test
+    public void testResolvePromiseSelf() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+
+        try {
+            promise.resolve(promise);
+            fail();
+        } catch (SelfResolutionException e) {
+            assertNotNull(e);
+        }
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
+    }
+
+    @Test
+    public void testFulfillPromiseSelf() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+
+        try {
+            promise.fulfill(promise);
+            fail();
+        } catch (SelfResolutionException e) {
+            assertNotNull(e);
+        }
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
+    }
+
+    @Test
+    public void testFulfillMutatedStateExceptionDouble() {
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<>();
+        Integer value = 1;
+
+        promise.fulfill(value);
+
+        try {
+            promise.fulfill(value);
+            fail("did not throw MutatedStateException");
+        } catch (MutatedStateException e) {
+            assertNotNull(e);
+        }
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(value, promise.getValue());
+        assertNull(promise.getException());
+    }
+
+    @Test
+    public void testRejectMutatedStateExceptionDouble() {
+        PromiseBaseShell<?> promise = new PromiseBaseShell<>();
+        Throwable value = new Throwable();
+
+        promise.reject(value);
+
+        try {
+            promise.reject(value);
             fail("did not throw MutatedStateException");
         } catch (MutatedStateException e) {
             assertNotEquals(null, e);
         }
 
         assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testResolve() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Object();
-
-        promise.resolve(value);
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
-    }
-
-    @Test
-    public void testResolveExceptionIsFulfilled() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new Throwable();
-
-        promise.resolve(value);
-
-        assertEquals(PromiseState.FULFILLED, promise.getState());
-        assertEquals(value, promise.getValue());
+        assertEquals(value, promise.getException());
+        assertNull(promise.getValue());
     }
 
     @Test
     public void testResolvePromiseIsAsync() {
-        PromiseBaseShell promise = new PromiseBaseShell();
-        Object value = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<Object>();
+        PromiseBaseShell<Object> value = new PromiseBaseShell<Object>();
 
         promise.resolve(value);
 
         assertEquals(PromiseState.PENDING, promise.getState());
+        assertNull(promise.getValue());
+        assertNull(promise.getException());
     }
 
     @Test
-    public void testResolvePromiseSelfResolution() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+    public void testFulfillPromiseResolvesPromise() {
+        Throwable e = new Throwable();
+        @SuppressWarnings("unchecked") Promise<Object> value = mock(Promise.class);
+        when(value.getState()).thenReturn(PromiseState.REJECTED);
+        when(value.exceptSync()).thenReturn(e);
 
-        try {
-            promise.resolve(promise);
-            fail("did not throw SelfResolutionException");
-        } catch (SelfResolutionException e) {
-            assertNotEquals(null, e);
-        }
-
-        assertEquals(PromiseState.PENDING, promise.getState());
-    }
-
-    @Test
-    public void testResolvePromiseFulfill() {
-        Promise inner = mock(Promise.class);
-        Object value = new Object();
-
+        @SuppressWarnings("unchecked") PromiseBaseShell<Promise<Object>> inner = mock(PromiseBaseShell.class);
         when(inner.getState()).thenReturn(PromiseState.FULFILLED);
-        when(inner.getValue()).thenReturn(value);
+        when(inner.thenSync()).thenReturn(value);
 
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Promise<Object>> promise = new PromiseBaseShell<>();
+
         promise.resolve(inner);
 
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(value, promise.getValue());
+        assertNull(promise.getException());
+        assertEquals(e, promise.thenSync().exceptSync());
     }
 
     @Test
-    public void testResolvePromiseReject() {
-        Promise inner = mock(Promise.class);
-        Object value = new Throwable();
+    public void testResolvePromiseNested() {
+        Throwable e = new Throwable();
+        @SuppressWarnings("unchecked") Promise<Object> value = mock(Promise.class);
+        when(value.getState()).thenReturn(PromiseState.REJECTED);
+        when(value.exceptSync()).thenReturn(e);
 
-        when(inner.getState()).thenReturn(PromiseState.REJECTED);
-        when(inner.getValue()).thenReturn(value);
+        PromiseBaseShell<Promise<Object>> promise = new PromiseBaseShell<>();
 
-        PromiseBaseShell promise = new PromiseBaseShell();
-        promise.resolve(inner);
+        promise.fulfill(value);
 
-        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals(value, promise.getValue());
+        assertNull(promise.getException());
+        assertEquals(e, promise.thenSync().exceptSync());
     }
 
     @Test
     public void testResolvePromiseFulfillAsync() {
-        PromiseBaseShell inner = spy(new PromiseBaseShell());
+        PromiseBaseShell<Object> inner = spy(new PromiseBaseShell<Object>());
 
         Object value = new Object();
 
@@ -349,16 +326,17 @@ public class PromiseBaseTest {
         // we also need to make it notifyAll, since we will have to wait, otherwise the test will exit
 
         doAnswer(new Answer<Object>() {
+            @SuppressWarnings("unchecked")
             @Override
             public Object answer(InvocationOnMock invocation) {
-                @SuppressWarnings("unchecked") Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
+                BiFunction callback = (BiFunction) invocation.getArguments()[0];
 
                 // do the rest of this in a new thread
                 Runnable runnable = () -> {
                     try {
                         TimeUnit.SECONDS.sleep(1);
-                        inner.finalize(PromiseState.FULFILLED, value);
-                        callback.apply(value);
+                        inner.fulfill(value);
+                        callback.apply(value, null);
                         synchronized (inner) {
                             inner.notifyAll();
                         }
@@ -373,9 +351,9 @@ public class PromiseBaseTest {
 
                 return null;
             }
-        }).when(inner).always(any(Function.class));
+        }).when(inner).always(any());
 
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<Object>();
 
         // trigger the countdown until actually resolving
         promise.resolve(inner);
@@ -399,24 +377,25 @@ public class PromiseBaseTest {
 
     @Test
     public void testResolvePromiseRejectAsync() {
-        PromiseBaseShell inner = spy(new PromiseBaseShell());
+        PromiseBaseShell<Object> inner = spy(new PromiseBaseShell<Object>());
 
-        Throwable value = new Throwable();
+        Throwable exception = new Throwable();
 
         // make inner .always work by calling it's callback after waiting a second, and setting the values correctly
         // we also need to make it notifyAll, since we will have to wait, otherwise the test will exit
 
         doAnswer(new Answer<Object>() {
+            @SuppressWarnings("unchecked")
             @Override
             public Object answer(InvocationOnMock invocation) {
-                @SuppressWarnings("unchecked") Function<Object, Object> callback = (Function<Object, Object>) invocation.getArguments()[0];
+                BiFunction callback = (BiFunction) invocation.getArguments()[0];
 
                 // do the rest of this in a new thread
                 Runnable runnable = () -> {
                     try {
                         TimeUnit.SECONDS.sleep(1);
-                        inner.reject(value);
-                        callback.apply(value);
+                        inner.reject(exception);
+                        callback.apply(null, exception);
                         synchronized (inner) {
                             inner.notifyAll();
                         }
@@ -431,9 +410,9 @@ public class PromiseBaseTest {
 
                 return null;
             }
-        }).when(inner).always(any(Function.class));
+        }).when(inner).always(any());
 
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<Object>();
 
         // trigger the countdown until actually resolving
         promise.resolve(inner);
@@ -452,7 +431,7 @@ public class PromiseBaseTest {
         }
 
         assertEquals(PromiseState.REJECTED, promise.getState());
-        assertEquals(value, promise.getValue());
+        assertEquals(exception, promise.getException());
     }
 
     /**
@@ -460,7 +439,7 @@ public class PromiseBaseTest {
      */
     @Test
     public void testRace() {
-        PromiseBaseShell promise = new PromiseBaseShell();
+        PromiseBaseShell<Object> promise = new PromiseBaseShell<Object>();
 
         Vector<Long> resultList = new Vector<Long>();
         ArrayList<Thread> threadList = new ArrayList<Thread>();
@@ -480,7 +459,7 @@ public class PromiseBaseTest {
 
                 // set the value to threadIndex,
                 try {
-                    promise.finalize(PromiseState.FULFILLED, threadIndex);
+                    promise.fulfill(threadIndex);
                     totalSuccess.addAndGet(1);
                 } catch (MutatedStateException ignored) {
                 }

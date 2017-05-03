@@ -1,20 +1,21 @@
 package me.joeycumines.javapromises.core;
 
-import me.joeycumines.javapromises.core.Promise;
-
 /**
- * If we tried to resolve a repeating loop of promises.
+ * Thrown on the attempted resolution of a completed promise, that forms OR will form a circular reference.
  */
 public class CircularResolutionException extends RuntimeException {
-    private Promise promise;
+    private Promise<?> promise;
 
-    public CircularResolutionException(Promise promise) {
-        super("[runtime exception] cannot resolve promise which creates a circular reference: " + promise.toString());
+    /**
+     * @param promise The promise which forms the circular reference.
+     */
+    public CircularResolutionException(Promise<?> promise) {
+        super("[illegal operation] cannot resolve promise which creates a circular reference: " + promise.toString());
 
         this.promise = promise;
     }
 
-    public Promise getPromise() {
-        return promise;
+    public Promise<?> getPromise() {
+        return this.promise;
     }
 }

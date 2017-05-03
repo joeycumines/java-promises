@@ -2,51 +2,54 @@ package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.MutatedStateException;
 import me.joeycumines.javapromises.core.Promise;
-import me.joeycumines.javapromises.core.PromiseState;
 import me.joeycumines.javapromises.core.SelfResolutionException;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Implementation of PromiseBase to test underlying functionality.
+ * Implementation of PromiseBase to test underlying functionality, exposes reject, fulfill, resolve.
  */
-public class PromiseBaseShell extends PromiseBase {
+public class PromiseBaseShell<T> extends PromiseBase<T> {
     @Override
-    public PromiseBaseShell finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
-        // protected > public
-        super.finalize(state, value);
-
-        return this;
+    public PromiseBase<T> reject(Throwable exception) throws MutatedStateException, NullPointerException {
+        return super.reject(exception);
     }
 
     @Override
-    public PromiseBaseShell reject(Throwable value) {
-        // protected > public
-        super.reject(value);
-
-        return this;
+    public PromiseBase<T> fulfill(T value) throws SelfResolutionException, MutatedStateException {
+        return super.fulfill(value);
     }
 
     @Override
-    public PromiseBaseShell resolve(Object value) {
-        // protected > public
-        super.resolve(value);
-
-        return this;
+    public PromiseBase<T> resolve(Promise<? extends T> promise) throws SelfResolutionException, MutatedStateException {
+        return super.resolve(promise);
     }
 
     @Override
-    public Promise then(Function callback) {
-        return this;
+    public <U> Promise<U> then(Function<? super T, Promise<? extends U>> callback) {
+        return null;
     }
 
     @Override
-    public Promise except(Function callback) {
-        return this;
+    public <U> Promise<U> then(BiConsumer<? super T, Consumer<? super U>> callback) {
+        return null;
     }
 
     @Override
-    public Promise always(Function callback) {
-        return this;
+    public Promise<T> except(Function<Throwable, Promise<? extends T>> callback) {
+        return null;
+    }
+
+    @Override
+    public Promise<T> except(BiConsumer<Throwable, Consumer<? super T>> callback) {
+        return null;
+    }
+
+    @Override
+    public <U> Promise<U> always(BiFunction<? super T, Throwable, Promise<? extends U>> callback) {
+        return null;
     }
 }

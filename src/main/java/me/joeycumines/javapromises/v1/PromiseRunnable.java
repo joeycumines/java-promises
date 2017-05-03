@@ -3,6 +3,8 @@ package me.joeycumines.javapromises.v1;
 import me.joeycumines.javapromises.core.*;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -17,11 +19,7 @@ import java.util.function.Function;
  * - neither action nor runner is required IF you are not calling {@link #run()}, and will manage the state externally
  * - executing actions are handled by the PromiseRunner, implement that however you wish
  */
-public class PromiseRunnable extends PromiseBase {
-    private static final Function<PromiseState, Boolean> ONLY_FULFILLED = (state) -> PromiseState.FULFILLED == state;
-    private static final Function<PromiseState, Boolean> ONLY_REJECTED = (state) -> PromiseState.REJECTED == state;
-    private static final Function<PromiseState, Boolean> ANY_FINALIZED = (state) -> PromiseState.PENDING != state;
-
+public class PromiseRunnable<T> extends PromiseBase<T> {
     /**
      * The action that may be executed by this promise, using the runner.
      * <p>
@@ -29,7 +27,7 @@ public class PromiseRunnable extends PromiseBase {
      * <p>
      * Can only be set (to something non-null) once.
      */
-    private Consumer<PromiseRunnable> action;
+    private Consumer<PromiseRunnable<? super T>> action;
 
     /*
      * A handler instance that provides a way to "run" this promise (this.action).
@@ -48,7 +46,7 @@ public class PromiseRunnable extends PromiseBase {
     /**
      * A list of promises that will be run on finalization of this.
      */
-    private final ConcurrentLinkedQueue<PromiseRunnable> subscriberQueue;
+    private final ConcurrentLinkedQueue<PromiseRunnable<?>> subscriberQueue;
 
     public PromiseRunnable() {
         this(null, null);
@@ -58,16 +56,16 @@ public class PromiseRunnable extends PromiseBase {
         this(runner, null);
     }
 
-    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable> action) {
+    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable<? super T>> action) {
         super();
 
         this.action = action;
         this.runner = runner;
         this.run = false;
-        this.subscriberQueue = new ConcurrentLinkedQueue<PromiseRunnable>();
+        this.subscriberQueue = new ConcurrentLinkedQueue<PromiseRunnable<?>>();
     }
 
-    public Consumer<PromiseRunnable> getAction() {
+    public Consumer<PromiseRunnable<? super T>> getAction() {
         if (null != this.action) {
             return this.action;
         }
@@ -83,7 +81,7 @@ public class PromiseRunnable extends PromiseBase {
         }
     }
 
-    public PromiseRunnable setAction(Consumer<PromiseRunnable> action) throws IllegalStateException {
+    public PromiseRunnable<T> setAction(Consumer<PromiseRunnable<? super T>> action) throws IllegalStateException {
         this.assureActionNotSet();
 
         synchronized (this.lock) {
@@ -111,7 +109,7 @@ public class PromiseRunnable extends PromiseBase {
         }
     }
 
-    public PromiseRunnable setRunner(PromiseRunner runner) throws IllegalStateException {
+    public PromiseRunnable<T> setRunner(PromiseRunner runner) throws IllegalStateException {
         this.assureRunnerNotSet();
 
         synchronized (this.lock) {
@@ -133,7 +131,7 @@ public class PromiseRunnable extends PromiseBase {
         }
     }
 
-    public PromiseRunnable setRun() {
+    public PromiseRunnable<T> setRun() {
         if (this.run) {
             return this;
         }
@@ -145,7 +143,7 @@ public class PromiseRunnable extends PromiseBase {
         return this;
     }
 
-    public PromiseRunnable run() {
+    public PromiseRunnable<T> run() {
         synchronized (this.lock) {
             if (null == this.runner) {
                 throw new RunPromiseException(this, "no runner was provided");
@@ -167,74 +165,35 @@ public class PromiseRunnable extends PromiseBase {
         return this;
     }
 
-    /**
-     * This should only ever be used internally, when we have definitely already resolved.
-     */
+    @Override
+    public PromiseRunnable<T> reject(Throwable exception) throws MutatedStateException, NullPointerException {
+        super.reject(exception);
+        this.broadcast();
+        return this;
+    }
+
+    @Override
+    public PromiseRunnable<T> fulfill(T value) throws SelfResolutionException, MutatedStateException {
+        super.fulfill(value);
+        this.broadcast();
+        return this;
+    }
+
+    @Override
+    public PromiseRunnable<T> resolve(Promise<? extends T> promise) throws SelfResolutionException, MutatedStateException {
+        super.resolve(promise);
+        this.broadcast();
+        return this;
+    }
+
     private void broadcast() {
-        while (!this.subscriberQueue.isEmpty()) {
+        while (PromiseState.PENDING != this.getState() && !this.subscriberQueue.isEmpty()) {
             // no we will not be safe, if it's in the queue it needs to be in a waiting state
             this.subscriberQueue.poll().run();
         }
     }
 
-    @Override
-    protected PromiseRunnable finalize(PromiseState state, Object value) throws IllegalArgumentException, MutatedStateException, SelfResolutionException {
-        // protected > public
-        super.finalize(state, value);
-
-        // by now the state of this promise is actually finalized, so we can deal with (potentially) additional threads
-        this.broadcast();
-
-        return this;
-    }
-
-    @Override
-    public PromiseRunnable reject(Throwable value) {
-        // protected > public
-        super.reject(value);
-
-        return this;
-    }
-
-    @Override
-    public PromiseRunnable resolve(Object value) {
-        // protected > public
-        super.resolve(value);
-
-        return this;
-    }
-
-    /**
-     * Generate a promise, that will have it's state set, and it's result determined, by a callback triggered based on a
-     * condition, otherwise if the condition fails, then it will inherit the same result as us via the subscriber queue.
-     *
-     * @param callback  The callback to be executed, the value returned can be a Promise.
-     * @param condition The condition to trigger if the callback will be called, based on the state.
-     * @return A new promise, that will be automatically run after this resolves.
-     */
-    private Promise build(Function<Object, Object> callback, Function<PromiseState, Boolean> condition) {
-        // create the action
-        Consumer<PromiseRunnable> action = (promise) -> {
-            try {
-                // load the parent's (this) finalized values, to be fed into and built on for promise
-                PromiseState state = this.getState();
-                Object value = this.getValue();
-
-                if (condition.apply(state)) {
-                    promise.resolve(callback.apply(value));
-                    return;
-                }
-
-                // we didn't meet the conditions to trigger the callback, just inherit the state
-                promise.finalize(state, value);
-            } catch (Throwable e) {
-                promise.reject(e);
-            }
-        };
-
-        // build a promise which inherits our runner
-        PromiseRunnable promise = new PromiseRunnable(this.getRunner(), action);
-
+    private <U> PromiseRunnable<U> subscribe(PromiseRunnable<U> promise) {
         // add this new promise as a subscriber
         this.subscriberQueue.offer(promise);
 
@@ -247,30 +206,104 @@ public class PromiseRunnable extends PromiseBase {
         return promise;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public Promise then(Function callback) {
-        return this.build(callback, ONLY_FULFILLED);
+    public <U> Promise<U> then(Function<? super T, Promise<? extends U>> callback) {
+        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+            try {
+                // inherit the exception if the parent (this) REJECTED, without running the callback
+                if (PromiseState.REJECTED == this.getState()) {
+                    promise.reject(this.getException());
+                    return;
+                }
+
+                promise.resolve(callback.apply(this.getValue()));
+            } catch (Throwable e) {
+                promise.reject(e);
+            }
+        };
+
+        return this.subscribe(new PromiseRunnable<>(this.getRunner(), action));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public Promise except(Function callback) {
-        return this.build(callback, ONLY_REJECTED);
+    public Promise<T> except(Function<Throwable, Promise<? extends T>> callback) {
+        Consumer<PromiseRunnable<? super T>> action = (promise) -> {
+            try {
+                // use the same value as the parent if the parent FULFILLED
+                if (PromiseState.FULFILLED == this.getState()) {
+                    promise.fulfill(this.getValue());
+                    return;
+                }
+
+                promise.resolve(callback.apply(this.getException()));
+            } catch (Throwable e) {
+                promise.reject(e);
+            }
+        };
+
+        return this.subscribe(new PromiseRunnable<>(this.getRunner(), action));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public Promise always(Function callback) {
-        return this.build(callback, ANY_FINALIZED);
+    public <U> Promise<U> always(BiFunction<? super T, Throwable, Promise<? extends U>> callback) {
+        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+            try {
+                promise.resolve(callback.apply(this.getValue(), this.getException()));
+            } catch (Throwable e) {
+                promise.reject(e);
+            }
+        };
+
+        return this.subscribe(new PromiseRunnable<>(this.getRunner(), action));
     }
 
-    /**
-     * Constructor shorthand, use the fluid-style setters + the run method.
-     *
-     * @return PromiseRunnable
-     */
-    public static PromiseRunnable create() {
-        return new PromiseRunnable();
+    @Override
+    public <U> Promise<U> then(BiConsumer<? super T, Consumer<? super U>> callback) {
+        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+            try {
+                // inherit the exception if the parent (this) REJECTED, without running the callback
+                if (PromiseState.REJECTED == this.getState()) {
+                    promise.reject(this.getException());
+                    return;
+                }
+
+                // MAY resolve promise
+                callback.accept(this.getValue(), promise::fulfill);
+
+                // if promise isn't resolved yet, fulfill it with null
+                if (PromiseState.PENDING == promise.getState()) {
+                    promise.fulfill(null);
+                }
+            } catch (Throwable e) {
+                promise.reject(e);
+            }
+        };
+
+        return this.subscribe(new PromiseRunnable<>(this.getRunner(), action));
+    }
+
+    @Override
+    public Promise<T> except(BiConsumer<Throwable, Consumer<? super T>> callback) {
+        Consumer<PromiseRunnable<? super T>> action = (promise) -> {
+            try {
+                // use the same value as the parent if the parent FULFILLED
+                if (PromiseState.FULFILLED == this.getState()) {
+                    promise.fulfill(this.getValue());
+                    return;
+                }
+
+                // MAY resolve promise
+                callback.accept(this.getException(), promise::fulfill);
+
+                // if promise isn't resolved yet, fulfill it with null
+                if (PromiseState.PENDING == promise.getState()) {
+                    promise.fulfill(null);
+                }
+            } catch (Throwable e) {
+                promise.reject(e);
+            }
+        };
+
+        return this.subscribe(new PromiseRunnable<>(this.getRunner(), action));
     }
 }

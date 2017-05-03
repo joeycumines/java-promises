@@ -1,5 +1,7 @@
 package me.joeycumines.javapromises.v1;
 
+import me.joeycumines.javapromises.core.PromiseFactory;
+import me.joeycumines.javapromises.core.PromiseTest;
 import org.junit.Test;
 
 import java.util.function.Consumer;
@@ -7,10 +9,15 @@ import java.util.function.Consumer;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class PromiseRunnableTest {
+public class PromiseRunnableTest extends PromiseTest {
+    @Override
+    protected PromiseFactory getFactory() {
+        return PromiseRunnableFactory.getInstance();
+    }
+
     @Test
     public void testRunner() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertEquals(null, promise.getRunner());
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
@@ -19,7 +26,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testRunnerTwice() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertEquals(null, promise.getRunner());
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
@@ -34,9 +41,9 @@ public class PromiseRunnableTest {
 
     @Test
     public void testAction() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertNull(promise.getAction());
-        Consumer<PromiseRunnable> action = (p) -> {
+        Consumer<PromiseRunnable<? super Object>> action = (p) -> {
         };
         promise.setAction(action);
         assertEquals(action, promise.getAction());
@@ -44,9 +51,9 @@ public class PromiseRunnableTest {
 
     @Test
     public void testActionTwice() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertNull(promise.getAction());
-        Consumer<PromiseRunnable> action = (p) -> {
+        Consumer<PromiseRunnable<? super Object>> action = (p) -> {
         };
         promise.setAction(action);
         try {
@@ -60,7 +67,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testSetRun() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertFalse(promise.isRun());
         promise.setRun();
         assertTrue(promise.isRun());
@@ -68,7 +75,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testSetRunTwice() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         assertFalse(promise.isRun());
         promise.setRun();
         assertTrue(promise.isRun());
@@ -78,7 +85,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testRunNoAction() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
 
@@ -95,7 +102,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testRunNoRunner() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setAction((p) -> {
         });
@@ -113,7 +120,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testRunAlreadyRun() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         promise.setAction((p) -> {
@@ -136,7 +143,7 @@ public class PromiseRunnableTest {
 
     @Test
     public void testRun() {
-        PromiseRunnable promise = new PromiseRunnable();
+        PromiseRunnable<Object> promise = new PromiseRunnable<Object>();
         PromiseRunner runner = mock(PromiseRunner.class);
         promise.setRunner(runner);
         promise.setAction((p) -> {

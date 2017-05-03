@@ -33,7 +33,7 @@ public class SimpleRunner implements PromiseRunner {
     }
 
     @Override
-    public void runPromise(PromiseRunnable promise) {
+    public <T> void runPromise(PromiseRunnable<T> promise) {
         this.executor.submit(() -> {
             promise.getAction().accept(promise);
         });

@@ -1,52 +1,65 @@
 package me.joeycumines.javapromises.v1;
 
-import me.joeycumines.javapromises.core.CircularResolutionException;
+import me.joeycumines.javapromises.core.Promise;
 import me.joeycumines.javapromises.core.PromiseApi;
-import me.joeycumines.javapromises.core.PromiseFactory;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A factory for creating PromiseRunnable instances.
+ * A factory for creating {@link PromiseRunnable} instances.
  * <p>
- * Default promise runner (for the global instance) is SimpleRunner.
+ * Default promise runner (for the global instance) is {@link SimpleRunner}.
  */
-public class PromiseRunnableFactory extends PromiseApi implements PromiseFactory {
+public class PromiseRunnableFactory extends PromiseApi {
     private static PromiseRunnableFactory globalInstance;
 
     private final PromiseRunner runner;
 
     public PromiseRunnableFactory(PromiseRunner runner) {
-        if (null == runner) {
-            throw new IllegalArgumentException("the runner cannot be null");
-        }
-
+        Objects.requireNonNull(runner);
         this.runner = runner;
     }
 
     @Override
-    public PromiseRunnable create(BiConsumer<Consumer<Object>, Consumer<Throwable>> action) {
-        return PromiseRunnable.create()
+    public <T> Promise<T> create(BiConsumer<Consumer<? super T>, Consumer<Throwable>> action) {
+        Objects.requireNonNull(action);
+
+        return (new PromiseRunnable<T>())
                 .setRunner(this.runner)
-                .setAction((promise) -> action.accept(promise::resolve, promise::reject))
+                .setAction((promise) -> {
+                    try {
+                        action.accept(promise::fulfill, promise::reject);
+                    } catch (Throwable e) {
+                        promise.reject(e);
+                    }
+                })
                 .run();
     }
 
     @Override
-    public PromiseRunnable reject(Throwable value) {
-        return PromiseRunnable.create()
+    public <T> Promise<T> reject(Throwable reason) {
+        return (new PromiseRunnable<T>())
                 .setRunner(this.runner)
                 .setRun()
-                .reject(value);
+                .reject(reason);
     }
 
     @Override
-    public PromiseRunnable resolve(Object value) throws CircularResolutionException {
-        return PromiseRunnable.create()
+    public <T> Promise<T> fulfill(T value) {
+        return (new PromiseRunnable<T>())
                 .setRunner(this.runner)
                 .setRun()
-                .resolve(value);
+                .fulfill(value);
+    }
+
+    @Override
+    public <T> Promise<T> wrap(Promise<? extends T> promise) {
+        return (new PromiseRunnable<T>())
+                .setRunner(this.runner)
+                .setRun()
+                .resolve(promise);
     }
 
     /**

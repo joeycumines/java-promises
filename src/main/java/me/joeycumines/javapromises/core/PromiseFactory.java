@@ -5,36 +5,72 @@ import java.util.function.Consumer;
 
 /**
  * Create promises in completion states, or allow them to be run asynchronously.
- * This interface just provides a way to pass around ways to instance Promise objects.
+ * <p>
+ * This interface provides a way to pass around ways to instance Promise objects, and can be considered the core API.
  */
 public interface PromiseFactory {
     /**
-     * Create a promise, and executes it asynchronously.
-     *
-     * The action parameter format is (resolve, reject) -> // stuff
+     * Creates a promise, and executes it asynchronously.
+     * <p>
+     * The action parameter format is {@code (fulfill, reject) -> // stuff}.
+     * <p>
+     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
+     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
+     * after action completes. The implementation of {@link BlockingPromise} takes
+     * advantage of this behaviour.
+     * <p>
+     * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
+     * {@code reject.accept(throwable)}.
+     * <p>
+     * Calling the reject parameter, within the action, with a null value, will cause a {@link NullPointerException} to
+     * be thrown internally, which will cause the returned promise to resolve as {@code REJECTED}, with that exception.
+     * <p>
+     * A null action parameter will cause a {@link NullPointerException} to be thrown.
      *
      * @param action The task to perform asynchronously.
+     * @param <T>    The type the promise will resolve with.
      * @return A new promise.
+     * @throws NullPointerException If the action is null.
      */
-    public Promise create(BiConsumer<Consumer<Object>, Consumer<Throwable>> action);
+    <T> Promise<T> create(BiConsumer<Consumer<? super T>, Consumer<Throwable>> action);
 
     /**
-     * Create a new REJECTED promise.
+     * Create a new {@code REJECTED} promise, with a provided reason for rejection.
+     * <p>
+     * This MUST happen synchronously (the returned Promise MUST be {@code REJECTED}, not {@code PENDING} to reject
+     * asynchronously).
+     * <p>
+     * A {@code null} reason will result in a {@link NullPointerException} being thrown.
      *
-     * @param value The value this will reject with.
+     * @param reason The value this will reject with.
      * @return A new promise.
+     * @throws NullPointerException If the reason is null.
      */
-    public Promise reject(Throwable value);
+    <T> Promise<T> reject(Throwable reason);
 
     /**
-     * Create a new promise that will fulfill or reject, if given a promise and based on it's state, otherwise simply
-     * fulfilling with the value given.
+     * Create a new promise that is {@code FULFILLED} with the provided value.
+     * <p>
+     * This MUST happen synchronously (the returned Promise MUST be {@code FULFILLED}, not {@code PENDING} to fulfill
+     * asynchronously).
      *
-     * Note that this method is RECURSIVE, like the A+ Promise spec.
-     *
-     * @param value The value this will finalized, promises will have their state propagated.
+     * @param value The value to fulfill.
+     * @param <T>   The type of the value the promise resolved.
      * @return A new promise.
-     * @throws CircularResolutionException If there are circular references of FULFILLED promises.
      */
-    public Promise resolve(Object value) throws CircularResolutionException;
+    <T> Promise<T> fulfill(T value);
+
+    /**
+     * Return a promise created by this PromiseFactory, from any given promise, that will resolve in the same way.
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     *
+     * @param promise The promise you want to wrap.
+     * @param <T>     The type of the promise.
+     * @return A new promise.
+     */
+    <T> Promise<T> wrap(Promise<? extends T> promise);
 }

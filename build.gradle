@@ -43,6 +43,25 @@ compileTestJava {
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
 
+javadoc {
+    classpath += sourceSets.test.compileClasspath
+    source += sourceSets.test.allJava
+}
+
+task testJavadoc(type: Javadoc) {
+    source = sourceSets.test.allJava
+    classpath = sourceSets.test.compileClasspath
+    // if not changed the destinationDir, the javadoc for production code is overridden.
+    destinationDir = file("${buildDir}/docs/testjavadoc")
+    doLast {
+        delete './docs/test'
+        copy {
+            from './build/docs/testjavadoc'
+            into './docs/test'
+        }
+    }
+}
+
 // run this to generate the java doc
 task generateDoc(type: Javadoc) {
     source = sourceSets.main.allJava
