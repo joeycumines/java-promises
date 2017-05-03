@@ -2,8 +2,11 @@ package me.joeycumines.javapromises.core;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -15,6 +18,283 @@ import static org.junit.Assert.*;
  */
 public abstract class PromiseTest {
     abstract protected PromiseFactory getFactory();
+
+    /**
+     * <b>Test {@link Promise#getState()}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * <b>Get the current state of the promise.</b>
+     * <p>
+     * A promise's initial state is {@code PENDING}, will change <b>at most</b> once, to either resolved states,
+     * {@code FULFILLED} or {@code REJECTED}.
+     * <p>
+     * {@code @return The state of the promise.}
+     */
+    @Test
+    public void testGetState() {
+        assertEquals(PromiseState.PENDING, this.getFactory().create((fulfill, reject) -> {
+        }).getState());
+        assertEquals(PromiseState.FULFILLED, this.getFactory().fulfill(new Object()).getState());
+        assertEquals(PromiseState.REJECTED, this.getFactory().reject(new Throwable()).getState());
+    }
+
+    /**
+     * <b>Test {@link Promise#then(Function)}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * If the callback returns a {@code null} value, then the returned promise will resolve as {@code FULFILLED} with
+     * value {@code null}.
+     */
+    @Test
+    public void testThenCallbackReturnNull() {
+        Promise<Integer> promise = this.getFactory().fulfill(42);
+        assertEquals(42, promise.thenSync().intValue());
+        promise = promise.then((value) -> {
+            return null;
+        });
+        assertNull(promise.thenSync());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * <b>Test {@link Promise#except(Function)}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * If the callback returns a {@code null} value, then the returned promise will resolve as {@code FULFILLED} with
+     * value {@code null}.
+     */
+    @Test
+    public void testExceptCallbackReturnNull() {
+        Throwable exception = new Throwable();
+        Promise<Integer> promise = this.getFactory().reject(exception);
+        assertEquals(exception, promise.exceptSync());
+        promise = promise.except((value) -> {
+            return null;
+        });
+        assertNull(promise.thenSync());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * <b>Test {@link Promise#except(Function)} and {@link Promise#except(BiConsumer)}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * If {@code this} resolved with the {@code FULFILLED} state, then the returned promise will reflect the state and
+     * value of {@code this}, and the <b>callback will not be run</b>.
+     */
+    @Test
+    public void testExceptCallbackDoesNothingOnFulfill() {
+        Promise<Integer> promise = this.getFactory().fulfill(42);
+        assertEquals(42, promise.thenSync().intValue());
+
+        promise = promise.except((e) -> {
+            throw new RuntimeException();
+        });
+        assertEquals(42, promise.thenSync().intValue());
+
+        promise = promise.except((e, fulfill) -> {
+            throw new RuntimeException();
+        });
+        assertEquals(42, promise.thenSync().intValue());
+
+        promise = promise.except((e) -> {
+            throw new RuntimeException();
+        });
+        assertEquals(42, promise.thenSync().intValue());
+
+        promise = promise.except((e, fulfill) -> {
+            throw new RuntimeException();
+        });
+        assertEquals(42, promise.thenSync().intValue());
+
+        promise = promise.then((value) -> {
+            return null;
+        });
+        assertNull(promise.thenSync());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * <b>Test {@link Promise#then(Function)} and {@link Promise#then(BiConsumer)}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * If {@code this} resolved with the {@code REJECTED} state, then the returned promise will reflect the state and
+     * value of {@code this}, and the <b>callback will not be run</b>.
+     */
+    @Test
+    public void testThenCallbackDoesNothingOnReject() {
+        Throwable exception = new Throwable();
+        Promise<Integer> promise = this.getFactory().reject(exception);
+        assertEquals(exception, promise.exceptSync());
+
+        promise = promise.then((r) -> this.getFactory().fulfill(5));
+        assertEquals(exception, promise.exceptSync());
+
+        promise = promise.then((r, fulfill) -> fulfill.accept(5));
+        assertEquals(exception, promise.exceptSync());
+
+        promise = promise.then((r) -> this.getFactory().fulfill(5));
+        assertEquals(exception, promise.exceptSync());
+
+        promise = promise.then((r, fulfill) -> fulfill.accept(5));
+        assertEquals(exception, promise.exceptSync());
+
+        promise = promise.except((value) -> {
+            return null;
+        });
+        assertNull(promise.thenSync());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testLargeChainOfThen() {
+        AtomicInteger counter = new AtomicInteger();
+        Promise<Integer> promise = this.getFactory().fulfill(0);
+
+        for (int x = 0; x < 50; x++) {
+            Promise<Integer> next = promise.then((r, fulfill) -> {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ignored) {
+                }
+                fulfill.accept(r + 1);
+            });
+            assertNotEquals(promise, next);
+            promise = next;
+            counter.incrementAndGet();
+        }
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+        assertEquals(50, promise.thenSync().intValue());
+        assertEquals(50, counter.get());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testAlwaysThrowInnerException() {
+        RuntimeException exception = new RuntimeException();
+        Promise<Integer> promise = this.getFactory().fulfill(67);
+        assertEquals(67, promise.thenSync().intValue());
+        promise = promise.always((r, e) -> {
+            assertEquals(67, r.intValue());
+            assertEquals(null, e);
+            throw exception;
+        });
+        assertEquals(exception, promise.exceptSync());
+        assertNull(promise.thenSync());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    @Test
+    public void testAlwaysReturnFulfilled() {
+        Promise<Integer> promise = this.getFactory().reject(new Throwable())
+                .always((r, e) -> {
+                    assertNotNull(e);
+                    assertNull(r);
+
+                    return this.getFactory().fulfill(125);
+                });
+
+        assertEquals(125, promise.thenSync().intValue());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testAlwaysReturnRejected() {
+        Exception exception = new Exception();
+
+        Promise<Integer> promise = this.getFactory().reject(new Throwable())
+                .always((r, e) -> {
+                    assertNotNull(e);
+                    assertNull(r);
+
+                    return this.getFactory().reject(exception);
+                });
+
+        assertEquals(exception, promise.exceptSync());
+        assertNull(promise.thenSync());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    @Test
+    public void testAlwaysReturnPending() {
+        BlockingPromise<Integer> blocker = new BlockingPromise<>(this.getFactory());
+
+        Promise<Integer> promise = this.getFactory().reject(new Throwable())
+                .always((r, e) -> {
+                    assertNotNull(e);
+                    assertNull(r);
+
+                    return blocker.getPromise();
+                });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+
+        blocker.fulfill(125);
+
+        assertEquals(125, promise.thenSync().intValue());
+        assertNull(promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testLogicalExceptionHandling() {
+        BlockingPromise<Integer> blocker = new BlockingPromise<>(this.getFactory());
+
+        Promise<Integer> promise = this.getFactory().reject(new Throwable())
+                .always((r, e) -> {
+                    assertNotNull(e);
+                    assertNull(r);
+
+                    return blocker.getPromise();
+                });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+
+        AtomicInteger counter = new AtomicInteger();
+
+        RuntimeException exception = new RuntimeException();
+
+        promise = promise
+                .then((r, fulfill) -> counter.incrementAndGet())
+                .then((r, fulfill) -> counter.incrementAndGet())
+                .then((r, fulfill) -> counter.incrementAndGet())
+                .always((r, e) -> this.getFactory().reject(exception))
+                .then((r, fulfill) -> counter.incrementAndGet())
+                .except((e) -> {
+                    assertEquals(exception, e);
+                    return this.getFactory().fulfill(3);
+                })
+                .except((e, fulfill) -> counter.incrementAndGet())
+                .then((r, fulfill) -> fulfill.accept((Integer) r + 2))
+                .except((e, fulfill) -> counter.incrementAndGet())
+                .except((e, fulfill) -> counter.incrementAndGet())
+                .always((r, e) -> {
+                    assertNull(e);
+                    assertNotNull(r);
+                    return this.getFactory().fulfill((Integer) r + 1);
+                });
+
+        assertEquals(PromiseState.PENDING, promise.getState());
+
+        blocker.reject(new Throwable());
+
+        assertEquals(6, promise.thenSync().intValue());
+        assertEquals(null, promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+
+        assertEquals(0, counter.get());
+    }
 
     @Test
     public void testChainTypesThenFulfillSuccess() {
@@ -57,6 +337,18 @@ public abstract class PromiseTest {
     }
 
     @Test
+    public void testExceptFulfillThrowException() {
+        RuntimeException e = new RuntimeException();
+        Promise<Object> promise = this.getFactory().reject(new Throwable())
+                .except((value, fulfill) -> {
+                    throw e;
+                });
+        assertEquals(null, promise.thenSync());
+        assertEquals(e, promise.exceptSync());
+        assertEquals(PromiseState.REJECTED, promise.getState());
+    }
+
+    @Test
     public void testThenFulfillThrowExceptionAfterFulfill() {
         RuntimeException e = new RuntimeException();
         Promise<String> promise = this.getFactory().fulfill(4)
@@ -64,6 +356,19 @@ public abstract class PromiseTest {
                     fulfill.accept("actual");
                     throw e;
                 });
+        assertEquals("actual", promise.thenSync());
+        assertEquals(null, promise.exceptSync());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    @Test
+    public void testExceptFulfillThrowExceptionAfterFulfill() {
+        RuntimeException e = new RuntimeException();
+        Promise<String> promise = this.getFactory().reject(new RuntimeException());
+        promise = promise.except((value, fulfill) -> {
+            fulfill.accept("actual");
+            throw e;
+        });
         assertEquals("actual", promise.thenSync());
         assertEquals(null, promise.exceptSync());
         assertEquals(PromiseState.FULFILLED, promise.getState());
