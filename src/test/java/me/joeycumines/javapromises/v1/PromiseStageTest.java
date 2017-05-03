@@ -1,9 +1,12 @@
 package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.PromiseFactory;
-import me.joeycumines.javapromises.core.PromiseFactoryTest;
+import me.joeycumines.javapromises.core.PromiseTest;
 
-public class PromiseStageFactoryTest extends PromiseFactoryTest {
+import static org.junit.Assert.*;
+
+public class PromiseStageTest extends PromiseTest {
+
     @Override
     protected PromiseFactory getFactory() {
         return PromiseStageFactory.getInstance();

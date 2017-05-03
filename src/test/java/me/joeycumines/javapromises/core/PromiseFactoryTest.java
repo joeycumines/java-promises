@@ -607,6 +607,63 @@ public abstract class PromiseFactoryTest {
     }
 
     /**
+     * <b>Test {@link PromiseFactory#create(BiConsumer)}</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * Creates a promise, and executes it asynchronously.
+     * <p>
+     * The action parameter format is {@code (fulfill, reject) -> // stuff}.
+     * <p>
+     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
+     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
+     * after action completes. The implementation of {@link BlockingPromise} takes
+     * advantage of this behaviour.
+     * <p>
+     * <b>Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
+     * {@code reject.accept(throwable)}.</b>
+     * <p>
+     * Calling the reject parameter, within the action, with a null value, will cause a {@link NullPointerException} to
+     * be thrown internally, which will cause the returned promise to resolve as {@code REJECTED}, with that exception.
+     * <p>
+     * A null action parameter will cause a {@link NullPointerException} to be thrown.
+     * <p>
+     * {@code @param action The task to perform asynchronously.}
+     * <p>
+     * {@code @param <T>    The type the promise will resolve with.}
+     * <p>
+     * {@code @return A new promise.}
+     * <p>
+     * {@code @throws NullPointerException If the action is null.}
+     */
+    @Test
+    public void testCreateCase10ThrowInternallyAfterFulfill() {
+        AtomicInteger counter = new AtomicInteger();
+
+        RuntimeException exception = new RuntimeException();
+
+        Promise<Integer> promise = this.getFactory().create((fulfill, reject) -> {
+            counter.incrementAndGet();
+
+            fulfill.accept(42);
+
+            throw exception;
+        });
+
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException ignored) {
+        }
+
+        promise.sync();
+
+        assertEquals(1, counter.get());
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(42, promise.thenSync().intValue());
+        assertEquals(null, promise.exceptSync());
+    }
+
+    /**
      * <b>Test {@link PromiseFactory#reject(Throwable)}</b>
      * <p>
      * --------------------------------------------

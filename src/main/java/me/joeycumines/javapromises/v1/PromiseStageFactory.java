@@ -3,6 +3,7 @@ package me.joeycumines.javapromises.v1;
 import me.joeycumines.javapromises.core.Promise;
 import me.joeycumines.javapromises.core.PromiseApi;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -20,16 +21,23 @@ public class PromiseStageFactory extends PromiseApi {
 
     @Override
     public <T> Promise<T> create(BiConsumer<Consumer<? super T>, Consumer<Throwable>> action) {
+        Objects.requireNonNull(action);
         CompletableFuture<T> future = new CompletableFuture<>();
 
+        Runnable task = () -> {
+            try {
+                action.accept(future::complete, future::completeExceptionally);
+            } catch (Throwable e) {
+                if (!future.isDone() && !future.isCompletedExceptionally() && !future.isCancelled()) {
+                    future.completeExceptionally(e);
+                }
+            }
+        };
+
         if (null == this.executor) {
-            CompletableFuture.runAsync(() -> {
-                action.accept(future::complete, future::completeExceptionally);
-            });
+            CompletableFuture.runAsync(task);
         } else {
-            CompletableFuture.runAsync(() -> {
-                action.accept(future::complete, future::completeExceptionally);
-            }, this.executor);
+            CompletableFuture.runAsync(task, this.executor);
         }
 
         return new PromiseStage<>(future, this.executor);
@@ -37,6 +45,7 @@ public class PromiseStageFactory extends PromiseApi {
 
     @Override
     public <T> Promise<T> reject(Throwable reason) {
+        Objects.requireNonNull(reason);
         CompletableFuture<T> future = new CompletableFuture<>();
         future.completeExceptionally(reason);
         return new PromiseStage<>(future, this.executor);
