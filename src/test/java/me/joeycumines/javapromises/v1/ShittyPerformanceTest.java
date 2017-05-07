@@ -6,8 +6,10 @@ import me.joeycumines.javapromises.v1.perf.maze.MazeSolution;
 import me.joeycumines.javapromises.v1.perf.maze.MazeTester;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -107,6 +109,36 @@ public class ShittyPerformanceTest {
                     }));
         };
 
+        AtomicBoolean done = new AtomicBoolean(false);
+        Thread threadCounter = new Thread(() -> {
+            while (!done.get()) {
+                long t = System.currentTimeMillis();
+                long c = 0;
+                long i = 0;
+
+                for (int x = 0; x < 5; x++) {
+                    i++;
+                    c += ManagementFactory.getThreadMXBean().getThreadCount();
+
+                    synchronized (done) {
+                        try {
+                            done.wait(100);
+                        } catch (InterruptedException ignored) {
+                        }
+                    }
+                    if (done.get()) {
+                        break;
+                    }
+                }
+
+                t = System.currentTimeMillis() - t;
+                long count = c / i;
+                System.out.println("--------average thread count last " + t + " ms : " + count);
+            }
+        });
+
+        threadCounter.start();
+
 //        consoleTest.accept("sample test", this::testSample);
 //
         testMaze.accept(2, 6);
@@ -114,6 +146,11 @@ public class ShittyPerformanceTest {
         testMaze.accept(10, 6);
         testMaze.accept(4, 11);
 //        testMaze.accept(2, 21);
+
+        done.set(true);
+        synchronized (done) {
+            done.notifyAll();
+        }
     }
 
     /**
