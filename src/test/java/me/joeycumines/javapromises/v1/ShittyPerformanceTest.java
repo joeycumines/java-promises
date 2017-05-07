@@ -112,7 +112,7 @@ public class ShittyPerformanceTest {
         testMaze.accept(5, 6);
         testMaze.accept(10, 6);
         testMaze.accept(4, 11);
-        testMaze.accept(2, 21);
+//        testMaze.accept(2, 21);
     }
 
     /**
