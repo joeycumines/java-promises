@@ -95,6 +95,7 @@ public class ShittyPerformanceTest {
             MazeTester mazeTester = new MazeTester(breadth, depth);
             System.out.println("--maze generation complete--");
             System.out.println("[control] maze solution single threaded took (ms): " + mazeTester.solveSingleThreaded());
+            System.out.println("[control] maze solution multi threaded took (ms): " + mazeTester.solveMultiThreaded());
 
             consoleTest.accept("maze test", (api) -> this.testMaze(api, mazeTester, new MazeSolution(), mazeTester.getMaze().start())
                     .then((String solution) -> {
@@ -107,11 +108,11 @@ public class ShittyPerformanceTest {
 
 //        consoleTest.accept("sample test", this::testSample);
 //
-//        testMaze.accept(2, 6);
-//        testMaze.accept(5, 6);
-//        testMaze.accept(10, 6);
-//        testMaze.accept(4, 11);
-//        testMaze.accept(2, 21);
+        testMaze.accept(2, 6);
+        testMaze.accept(5, 6);
+        testMaze.accept(10, 6);
+        testMaze.accept(4, 11);
+        testMaze.accept(2, 21);
     }
 
     /**
