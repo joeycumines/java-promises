@@ -1,7 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
-import me.joeycumines.javapromises.core.Promise;
-import me.joeycumines.javapromises.core.PromiseApi;
+import me.joeycumines.javapromises.core.*;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -15,6 +14,10 @@ public class PromiseStageFactory extends PromiseApi {
 
     private final Executor executor;
 
+    public PromiseStageFactory() {
+        this.executor = null;
+    }
+
     public PromiseStageFactory(Executor executor) {
         this.executor = executor;
     }
@@ -24,9 +27,34 @@ public class PromiseStageFactory extends PromiseApi {
         Objects.requireNonNull(action);
         CompletableFuture<T> future = new CompletableFuture<>();
 
+        Promise<T> promise = new PromiseStage<>(future, this.executor);
+
         Runnable task = () -> {
             try {
-                action.accept(future::complete, future::completeExceptionally);
+                action.accept(
+                        (value) -> {
+                            PromiseState state = promise.getState();
+                            if (PromiseState.PENDING != state) {
+                                throw new MutatedStateException(promise, state, PromiseState.FULFILLED);
+                            }
+
+                            if (value == promise) {
+                                throw new SelfResolutionException(promise);
+                            }
+
+                            future.complete(value);
+                        },
+                        (exception) -> {
+                            Objects.requireNonNull(exception);
+
+                            PromiseState state = promise.getState();
+                            if (PromiseState.PENDING != state) {
+                                throw new MutatedStateException(promise, state, PromiseState.REJECTED);
+                            }
+
+                            future.completeExceptionally(exception);
+                        }
+                );
             } catch (Throwable e) {
                 if (!future.isDone() && !future.isCompletedExceptionally() && !future.isCancelled()) {
                     future.completeExceptionally(e);
@@ -40,7 +68,7 @@ public class PromiseStageFactory extends PromiseApi {
             CompletableFuture.runAsync(task, this.executor);
         }
 
-        return new PromiseStage<>(future, this.executor);
+        return promise;
     }
 
     @Override
@@ -48,18 +76,21 @@ public class PromiseStageFactory extends PromiseApi {
         Objects.requireNonNull(reason);
         CompletableFuture<T> future = new CompletableFuture<>();
         future.completeExceptionally(reason);
-        return new PromiseStage<>(future, this.executor);
+        Promise<T> promise = new PromiseStage<>(future, this.executor);
+        promise.sync();
+        return promise;
     }
 
     @Override
     public <T> Promise<T> fulfill(T value) {
-        return new PromiseStage<>(CompletableFuture.completedFuture(value), this.executor);
+        Promise<T> promise = new PromiseStage<>(CompletableFuture.completedFuture(value), this.executor);
+        promise.sync();
+        return promise;
     }
 
     @Override
     public <T> Promise<T> wrap(Promise<? extends T> promise) {
-        // TODO: implement this
-        return null;
+        return PromiseStage.wrap(CompletableFuture.completedFuture(null), this.executor, promise);
     }
 
     /**
@@ -73,7 +104,6 @@ public class PromiseStageFactory extends PromiseApi {
                     globalInstance = new PromiseStageFactory(Executors.newCachedThreadPool());
                 }
             }
-
         }
 
         return globalInstance;

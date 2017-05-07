@@ -26,7 +26,6 @@ public class SimpleRunner implements PromiseRunner {
                     singletonInstance = new SimpleRunner();
                 }
             }
-
         }
 
         return singletonInstance;

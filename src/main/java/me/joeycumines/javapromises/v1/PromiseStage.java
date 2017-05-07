@@ -1,5 +1,6 @@
 package me.joeycumines.javapromises.v1;
 
+import me.joeycumines.javapromises.core.MutatedStateException;
 import me.joeycumines.javapromises.core.Promise;
 import me.joeycumines.javapromises.core.PromiseState;
 
@@ -35,12 +36,34 @@ public class PromiseStage<T> extends PromiseBase<T> {
     }
 
     public PromiseStage(CompletionStage<T> stage, Executor executor) {
+        this(stage, executor, null);
+    }
+
+    /**
+     * @param stage        The completion stage to base this promise off.
+     * @param executor     The executor if desired, will be inherited by all chained promises.
+     * @param resultSource ONLY FOR INTERNAL USE.
+     */
+    private PromiseStage(CompletionStage<T> stage, Executor executor, Promise<? extends T> resultSource) {
         super();
 
         Objects.requireNonNull(stage);
 
+        this.executor = executor;
+
+        // handle resolving another promise as the result source THIS REQUIRES STAGE TO BE COMPLETE, OR LOGIC WILL BORK
+        if (null != resultSource) {
+            this.stage = stage;
+            this.resolve(resultSource);
+            return;
+        }
+
         // this means we should always be resolved BEFORE we trigger any callbacks
         this.stage = stage.whenComplete((value, throwable) -> {
+            if (PromiseState.PENDING != this.getState()) {
+                throw new MutatedStateException(this, this.getState(), null == throwable ? PromiseState.FULFILLED : PromiseState.REJECTED);
+            }
+
             if (null != throwable) {
                 if (throwable instanceof CompletionException) {
                     CompletionException a = (CompletionException) throwable;
@@ -54,8 +77,6 @@ public class PromiseStage<T> extends PromiseBase<T> {
 
             this.fulfill(value);
         });
-
-        this.executor = executor;
     }
 
     public CompletionStage<T> getStage() {
@@ -66,28 +87,8 @@ public class PromiseStage<T> extends PromiseBase<T> {
         return this.executor;
     }
 
-    /**
-     * Specify a callback to be run on successful resolution {@code FULFILLED} of this, and return a new promise,
-     * that will resolve with the same state and value as the callback's returned promise, <b>after</b> the callback
-     * promise resolves. The input parameter will be the {@code FULFILLED} value of {@code this}.
-     * <p>
-     * The callback will be run as soon as possible (but not inline) if {@code this} is already {@code FULFILLED}.
-     * <p>
-     * If the callback returns a {@code null} value, then the returned promise will resolve as {@code FULFILLED} with
-     * value {@code null}.
-     * <p>
-     * If an exception is thrown within the callback, then the returned promise will be {@code REJECTED}, with that
-     * exception.
-     * <p>
-     * If {@code this} resolved with the {@code REJECTED} state, then the returned promise will reflect the state and
-     * value of {@code this}, and the <b>callback will not be run</b>.
-     *
-     * @param callback The operation which will be performed if {@code this} resolves successfully.
-     * @return A promise which will resolve after the previous promise(s) AND any inner operations.
-     * @throws NullPointerException If callback is null.
-     */
     @Override
-    public <U> Promise<U> then(Function<? super T, Promise<? extends U>> callback) {
+    public <U> Promise<U> then(Function<? super T, ? extends Promise<? extends U>> callback) {
         // thenComposeAsync(Function<? super T,? extends CompletionStage<U>> fn, Executor executor)
         // inner returns a CompletableFuture - triggered after inner promise
         CompletableFuture<U> future = new CompletableFuture<>();
@@ -121,35 +122,6 @@ public class PromiseStage<T> extends PromiseBase<T> {
         return new PromiseStage<>(this.getStage().thenComposeAsync(fn, this.getExecutor()), this.getExecutor());
     }
 
-    /**
-     * Specify a callback to be run on successful resolution {@code FULFILLED} of this, and return a new promise,
-     * that will fulfill with the value accepted within the callback, into it's second argument, a {@link Consumer}.
-     * <p>
-     * The callback will be run as soon as possible (but not inline) if {@code this} is already {@code FULFILLED}.
-     * <p>
-     * If no call is made to this second argument <b>within the callback</b>, then the resolved value of the returned
-     * promise will be {@code null}, and the state {@code FULFILLED}.
-     * <p>
-     * If {@code this} resolves as {@code REJECTED} <b>callback will not be called</b>, and the returned promise will
-     * reject with the same {@link Throwable}.
-     * <p>
-     * If an exception is thrown within the callback, then the returned promise will be {@code REJECTED} with that
-     * exception, <b>provided that it has not already resolved</b>.
-     * <p>
-     * For example:
-     * <pre>
-     *     <code>
-     *         Promise&lt;Integer&gt; input = // some async operation which eventually fulfills with int(5)
-     *         Promise&lt;Integer&gt; output = input.then((inputValue, fulfill) -> fulfill.accept(inputValue + 10));
-     *         // will output 15
-     *         System.out.println(output.thenSync());
-     *     </code>
-     * </pre>
-     *
-     * @param callback The operation which will be performed if the promise resolves successfully.
-     * @return A promise which will resolve after the previous promise AND any inner operations.
-     * @throws NullPointerException If callback is null.
-     */
     @Override
     public <U> Promise<U> then(BiConsumer<? super T, Consumer<? super U>> callback) {
         // thenApplyAsync(Function<? super T,? extends U> fn)
@@ -172,32 +144,8 @@ public class PromiseStage<T> extends PromiseBase<T> {
         return new PromiseStage<>(this.getStage().thenApplyAsync(fn, this.getExecutor()), this.getExecutor());
     }
 
-    /**
-     * Specify a callback to be run if this resolves with a failed state {@code REJECTED}, and return a new promise,
-     * that will resolve with the same state and value as the callback's returned promise, <b>after</b> the callback
-     * promise resolves. The input parameter will be the {@code REJECTED} value of {@code this} (a {@link Throwable}).
-     * <p>
-     * To preserve type safety, the returned type of promise within the callback is restricted to things which can be
-     * cast to the type of {@code T}, unlike {@link #then(Function)}, which can allow any type, due to the fact that the
-     * no-callback case will only ever result in a {@link Throwable}.
-     * <p>
-     * The callback will be run as soon as possible (but not inline) if {@code this} is already {@code REJECTED}.
-     * <p>
-     * If the callback returns a {@code null} value, then the returned promise will resolve as {@code FULFILLED} with
-     * value {@code null}.
-     * <p>
-     * If an exception is thrown within the callback, then the returned promise will be {@code REJECTED}, with that
-     * exception.
-     * <p>
-     * If {@code this} resolved with the {@code FULFILLED} state, then the returned promise will reflect the state and
-     * value of {@code this}, and the <b>callback will not be run</b>.
-     *
-     * @param callback The operation which will be performed if the promise resolves exceptionally.
-     * @return A promise which will resolve after the previous promise(s) AND any inner operations.
-     * @throws NullPointerException If callback is null.
-     */
     @Override
-    public Promise<T> except(Function<Throwable, Promise<? extends T>> callback) {
+    public Promise<T> except(Function<Throwable, ? extends Promise<? extends T>> callback) {
         // CompletionStage<T> exceptionally(Function<Throwable,? extends T> fn)
         // set an exception, to indicate if it completed exceptionally
         // thenComposeAsync(Function<? super T,? extends CompletionStage<U>> fn, Executor executor)
@@ -254,39 +202,6 @@ public class PromiseStage<T> extends PromiseBase<T> {
         return new PromiseStage<>(stage.thenComposeAsync(fn, this.getExecutor()), this.getExecutor());
     }
 
-    /**
-     * Specify a callback to be run if this resolves with a failed state {@code REJECTED}, and return a new promise,
-     * that will fulfill with the value accepted within the callback, into it's second argument, a {@link Consumer}.
-     * <p>
-     * To preserve type safety, the type of fulfillment value within the callback is restricted, to things which can be
-     * cast to the type of {@code T}, unlike {@link #then(BiConsumer)}, which can allow any type, due to the fact that
-     * the no-callback case will only ever result in a {@link Throwable}.
-     * <p>
-     * The callback will be run as soon as possible (but not inline) if {@code this} is already {@code REJECTED}.
-     * <p>
-     * If no call is made to this second argument <b>within the callback</b>, then the resolved value of the returned
-     * promise will be {@code null}, and the state {@code FULFILLED}.
-     * <p>
-     * If {@code this} resolves as {@code FULFILLED} <b>callback will not be called</b>, and the returned promise will
-     * fulfill with the same value.
-     * <p>
-     * If an exception is thrown within the callback, then the returned promise will be {@code REJECTED} with that
-     * exception, <b>provided that it has not already resolved</b>.
-     * <p>
-     * For example:
-     * <pre>
-     *     <code>
-     *         Promise&lt;Object&gt; input = // some async operation which eventually rejects with an exception
-     *         Promise&lt;Object&gt; output = input.except((exception, fulfill) -> fulfill.accept(exception));
-     *         // will output the string representation of the FULFILLED exception originally REJECTED by input
-     *         System.out.println(output.thenSync());
-     *     </code>
-     * </pre>
-     *
-     * @param callback The operation which will be performed if the promise resolves exceptionally.
-     * @return A promise which will resolve after the previous promise AND any inner operations.
-     * @throws NullPointerException If callback is null.
-     */
     @Override
     public Promise<T> except(BiConsumer<Throwable, Consumer<? super T>> callback) {
         Holder<Throwable> exception = new Holder<>();
@@ -328,29 +243,8 @@ public class PromiseStage<T> extends PromiseBase<T> {
         return new PromiseStage<>(stage.thenApplyAsync(fn, this.getExecutor()), this.getExecutor());
     }
 
-    /**
-     * Specify a callback that will always run on resolution, or as soon as possible if {@code this} is already in
-     * a resolved state. Returns a new promise, that will resolve with the same state and value as the callback's return
-     * value (a promise), <b>after</b> the returned promise resolves.
-     * <p>
-     * The right input parameter will be the {@code REJECTED} exception (not {@code null}), if {@code this} rejected,
-     * otherwise it can be assumed that the state was {@code FULFILLED}, and the left input parameter will be set, if
-     * the fulfillment value was non-null.
-     * <p>
-     * The callback will be run as soon as possible (but not inline) if {@code this} is already resolved.
-     * <p>
-     * If the callback returns a {@code null} value, then the returned promise will resolve as {@code FULFILLED} with
-     * value {@code null}.
-     * <p>
-     * If an exception is thrown within the callback, then the returned promise will be {@code REJECTED}, with that
-     * exception.
-     *
-     * @param callback The operation to perform when the promise resolves.
-     * @return A promise which will resolve after the previous promise AND any inner operations.
-     * @throws NullPointerException If callback is null.
-     */
     @Override
-    public <U> Promise<U> always(BiFunction<? super T, Throwable, Promise<? extends U>> callback) {
+    public <U> Promise<U> always(BiFunction<? super T, Throwable, ? extends Promise<? extends U>> callback) {
         // CompletionStage<T> exceptionally(Function<Throwable,? extends T> fn)
         // set an exception, that is only checked if the value for the next one is null
         // thenComposeAsync(Function<? super T,? extends CompletionStage<U>> fn, Executor executor)
@@ -399,6 +293,36 @@ public class PromiseStage<T> extends PromiseBase<T> {
         }
 
         return new PromiseStage<>(stage.thenComposeAsync(fn, this.getExecutor()), this.getExecutor());
+    }
+
+    /**
+     * Use a <b>completed</b> {@link CompletionStage} as a base, create a new {@link PromiseStage}, that will resolve
+     * with the same state and value as the provided {@link Promise}.
+     * <p>
+     * A null stage or promise will result in a {@link NullPointerException}.
+     * <p>
+     * If the stage provided is not completed, and will never complete, then this thread will hang.
+     *
+     * @param stage    A SUCCESSFULLY COMPLETED completion stage.
+     * @param executor The executor to create the new {@link PromiseStage} with. Can be null.
+     * @param promise  The promise to wrap.
+     * @param <T>      The type of the returned promise.
+     * @return A new promise that will resolve the same as the provided one that is an instance of {@link PromiseStage}.
+     */
+    static <T> Promise<T> wrap(CompletionStage<T> stage, Executor executor, Promise<? extends T> promise) {
+        Objects.requireNonNull(stage);
+        Objects.requireNonNull(promise);
+
+        // if we don't sync with the stage it will be less obvious to debug, then clauses will never run instead
+        PromiseStage<T> base = new PromiseStage<>(stage, executor);
+        base.sync();
+
+        // exit early with immediate resolution if we can
+        if (PromiseState.PENDING != promise.getState()) {
+            return new PromiseStage<>(stage, executor, promise);
+        }
+
+        return base.then((v) -> promise);
     }
 
     class Holder<U> {

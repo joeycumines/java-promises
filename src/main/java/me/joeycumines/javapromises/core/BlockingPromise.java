@@ -11,7 +11,7 @@ import java.util.function.Consumer;
  * This class is tested as part of {@link PromiseFactory}, in the abstract PromiseFactoryTest class.
  */
 public class BlockingPromise<T> {
-    private Promise<T> promise;
+    private final Promise<T> promise;
     private Consumer<? super T> _fulfill;
     private Consumer<Throwable> _reject;
     private final Object lock;

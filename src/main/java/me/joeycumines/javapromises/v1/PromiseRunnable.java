@@ -27,7 +27,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
      * <p>
      * Can only be set (to something non-null) once.
      */
-    private Consumer<PromiseRunnable<? super T>> action;
+    private Consumer<PromiseRunnable<T>> action;
 
     /*
      * A handler instance that provides a way to "run" this promise (this.action).
@@ -56,7 +56,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
         this(runner, null);
     }
 
-    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable<? super T>> action) {
+    public PromiseRunnable(PromiseRunner runner, Consumer<PromiseRunnable<T>> action) {
         super();
 
         this.action = action;
@@ -65,7 +65,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
         this.subscriberQueue = new ConcurrentLinkedQueue<PromiseRunnable<?>>();
     }
 
-    public Consumer<PromiseRunnable<? super T>> getAction() {
+    public Consumer<PromiseRunnable<T>> getAction() {
         if (null != this.action) {
             return this.action;
         }
@@ -81,7 +81,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
         }
     }
 
-    public PromiseRunnable<T> setAction(Consumer<PromiseRunnable<? super T>> action) throws IllegalStateException {
+    public PromiseRunnable<T> setAction(Consumer<PromiseRunnable<T>> action) throws IllegalStateException {
         this.assureActionNotSet();
 
         synchronized (this.lock) {
@@ -189,7 +189,11 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
     private void broadcast() {
         while (PromiseState.PENDING != this.getState() && !this.subscriberQueue.isEmpty()) {
             // no we will not be safe, if it's in the queue it needs to be in a waiting state
-            this.subscriberQueue.poll().run();
+            PromiseRunnable<?> promise = this.subscriberQueue.poll();
+            // we do need to be aware that we could have concurrent access though
+            if (null != promise) {
+                promise.run();
+            }
         }
     }
 
@@ -207,8 +211,8 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
     }
 
     @Override
-    public <U> Promise<U> then(Function<? super T, Promise<? extends U>> callback) {
-        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+    public <U> Promise<U> then(Function<? super T, ? extends Promise<? extends U>> callback) {
+        Consumer<PromiseRunnable<U>> action = (promise) -> {
             try {
                 // inherit the exception if the parent (this) REJECTED, without running the callback
                 if (PromiseState.REJECTED == this.getState()) {
@@ -226,8 +230,8 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
     }
 
     @Override
-    public Promise<T> except(Function<Throwable, Promise<? extends T>> callback) {
-        Consumer<PromiseRunnable<? super T>> action = (promise) -> {
+    public Promise<T> except(Function<Throwable, ? extends Promise<? extends T>> callback) {
+        Consumer<PromiseRunnable<T>> action = (promise) -> {
             try {
                 // use the same value as the parent if the parent FULFILLED
                 if (PromiseState.FULFILLED == this.getState()) {
@@ -245,8 +249,8 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
     }
 
     @Override
-    public <U> Promise<U> always(BiFunction<? super T, Throwable, Promise<? extends U>> callback) {
-        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+    public <U> Promise<U> always(BiFunction<? super T, Throwable, ? extends Promise<? extends U>> callback) {
+        Consumer<PromiseRunnable<U>> action = (promise) -> {
             try {
                 promise.resolve(callback.apply(this.getValue(), this.getException()));
             } catch (Throwable e) {
@@ -259,7 +263,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
 
     @Override
     public <U> Promise<U> then(BiConsumer<? super T, Consumer<? super U>> callback) {
-        Consumer<PromiseRunnable<? super U>> action = (promise) -> {
+        Consumer<PromiseRunnable<U>> action = (promise) -> {
             try {
                 // inherit the exception if the parent (this) REJECTED, without running the callback
                 if (PromiseState.REJECTED == this.getState()) {
@@ -284,7 +288,7 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
 
     @Override
     public Promise<T> except(BiConsumer<Throwable, Consumer<? super T>> callback) {
-        Consumer<PromiseRunnable<? super T>> action = (promise) -> {
+        Consumer<PromiseRunnable<T>> action = (promise) -> {
             try {
                 // use the same value as the parent if the parent FULFILLED
                 if (PromiseState.FULFILLED == this.getState()) {

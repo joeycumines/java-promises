@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Extend this class to test a {@link PromiseFactory} implementation.
@@ -23,10 +24,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. <b>If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes.</b> The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -46,7 +47,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase1CreatesPromiseAsync() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Promise<Object> promise = this.getFactory().create((fulfill, reject) -> {
             try {
@@ -87,10 +88,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * <b>The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.</b>
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.</b>
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -110,7 +111,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase2Fulfill() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Object value = new Object();
 
@@ -158,10 +159,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * <b>The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.</b>
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.</b>
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -181,7 +182,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase3Reject() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Throwable exception = new Throwable();
 
@@ -229,10 +230,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * <b>The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.</b>
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.</b>
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -252,7 +253,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase4FulfillThenBoth() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Object value = new Object();
 
@@ -266,12 +267,16 @@ public abstract class PromiseFactoryTest {
 
             try {
                 fulfill.accept(new Object());
-            } catch (Throwable ignored) {
+                fail("must throw a MutatedStateException");
+            } catch (MutatedStateException e) {
+                assertNotNull(e);
             }
 
             try {
                 reject.accept(new Throwable());
-            } catch (Throwable ignored) {
+                fail("must throw a MutatedStateException");
+            } catch (MutatedStateException e) {
+                assertNotNull(e);
             }
 
             counter.incrementAndGet();
@@ -310,10 +315,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * <b>The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.</b>
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.</b>
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -333,7 +338,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase5RejectThenBoth() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Throwable exception = new Throwable();
 
@@ -347,12 +352,16 @@ public abstract class PromiseFactoryTest {
 
             try {
                 fulfill.accept(new Object());
-            } catch (Throwable ignored) {
+                fail("must throw a MutatedStateException");
+            } catch (MutatedStateException e) {
+                assertNotNull(e);
             }
 
             try {
                 reject.accept(new Throwable());
-            } catch (Throwable ignored) {
+                fail("must throw a MutatedStateException");
+            } catch (MutatedStateException e) {
+                assertNotNull(e);
             }
 
             counter.incrementAndGet();
@@ -393,10 +402,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * <b>The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.</b>
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.</b>
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -416,7 +425,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase6FulfillNull() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Promise<Object> promise = this.getFactory().create((fulfill, reject) -> {
             try {
@@ -462,10 +471,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -485,7 +494,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase7RejectNull() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         Promise<Object> promise = this.getFactory().create((fulfill, reject) -> {
             counter.incrementAndGet();
@@ -520,10 +529,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
      * <p>
      * <b>Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.</b>
@@ -543,7 +552,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase8ThrowInternally() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         RuntimeException exception = new RuntimeException();
 
@@ -575,10 +584,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -615,10 +624,10 @@ public abstract class PromiseFactoryTest {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
      * <p>
      * <b>Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.</b>
@@ -638,7 +647,7 @@ public abstract class PromiseFactoryTest {
      */
     @Test
     public void testCreateCase10ThrowInternallyAfterFulfill() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         RuntimeException exception = new RuntimeException();
 
@@ -676,7 +685,9 @@ public abstract class PromiseFactoryTest {
      * A {@code null} reason will result in a {@link NullPointerException} being thrown.
      * <p>
      * {@code @param reason The value this will reject with.}
+     * <p>
      * {@code @return A new promise.}
+     * <p>
      * {@code @throws NullPointerException If the reason is null.}
      */
     @Test
@@ -704,7 +715,9 @@ public abstract class PromiseFactoryTest {
      * A {@code null} reason will result in a {@link NullPointerException} being thrown.
      * <p>
      * {@code @param reason The value this will reject with.}
+     * <p>
      * {@code @return A new promise.}
+     * <p>
      * {@code @throws NullPointerException If the reason is null.}
      */
     @Test
@@ -732,7 +745,9 @@ public abstract class PromiseFactoryTest {
      * <b>A {@code null} reason will result in a {@link NullPointerException} being thrown.</b>
      * <p>
      * {@code @param reason The value this will reject with.}
+     * <p>
      * {@code @return A new promise.}
+     * <p>
      * {@code @throws NullPointerException If the reason is null.}
      */
     @Test
@@ -756,7 +771,9 @@ public abstract class PromiseFactoryTest {
      * asynchronously).
      * <p>
      * {@code @param value The value to fulfill.}
+     * <p>
      * {@code @param <T>   The type of the value the promise resolved.}
+     * <p>
      * {@code @return A new promise.}
      */
     @Test
@@ -780,7 +797,9 @@ public abstract class PromiseFactoryTest {
      * asynchronously).</b>
      * <p>
      * {@code @param value The value to fulfill.}
+     * <p>
      * {@code @param <T>   The type of the value the promise resolved.}
+     * <p>
      * {@code @return A new promise.}
      */
     @Test
@@ -804,7 +823,9 @@ public abstract class PromiseFactoryTest {
      * asynchronously).
      * <p>
      * {@code @param value The value to fulfill.}
+     * <p>
      * {@code @param <T>   The type of the value the promise resolved.}
+     * <p>
      * {@code @return A new promise.}
      */
     @Test
@@ -815,6 +836,193 @@ public abstract class PromiseFactoryTest {
         assertEquals(null, promise.thenSync());
         assertEquals(null, promise.exceptSync());
         assertEquals(PromiseState.FULFILLED, promise.getState());
+    }
+
+    /**
+     * <b>Test {@link PromiseFactory#wrap(Promise)}, ensure it wraps the promise in something.</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * <b>Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.</b>
+     * <p>
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     * <p>
+     * NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.
+     * <p>
+     * {@code @param promise The promise you want to wrap.}
+     * <p>
+     * {@code @param <T>     The type of the promise.}
+     * <p>
+     * {@code @return A new promise.}
+     */
+    @Test
+    public void testWrapCase1PromiseIsWrapped() {
+        @SuppressWarnings("unchecked") Promise<Object> promise = mock(Promise.class);
+        when(promise.getState()).thenReturn(PromiseState.PENDING);
+
+        Promise<Object> wrapped = this.getFactory().wrap(promise);
+
+        assertNotEquals(promise, wrapped);
+        assertNotEquals(promise.getClass().getName(), wrapped.getClass().getName());
+        assertEquals(PromiseState.PENDING, wrapped.getState());
+    }
+
+    /**
+     * <b>Test {@link PromiseFactory#wrap(Promise)}, ensure that already fulfilled promises are resolved inline.</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.
+     * <p>
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     * <p>
+     * <b>NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.</b>
+     * <p>
+     * {@code @param promise The promise you want to wrap.}
+     * <p>
+     * {@code @param <T>     The type of the promise.}
+     * <p>
+     * {@code @return A new promise.}
+     */
+    @Test
+    public void testWrapCase2FulfilledWillBeSynced() {
+        Integer value = 135;
+        @SuppressWarnings("unchecked") Promise<Object> promise = mock(Promise.class);
+        when(promise.getState()).thenReturn(PromiseState.FULFILLED);
+        when(promise.thenSync()).thenReturn(value);
+        when(promise.exceptSync()).thenReturn(null);
+
+        Promise<Object> wrapped = this.getFactory().wrap(promise);
+
+        assertEquals(PromiseState.FULFILLED, wrapped.getState());
+        assertEquals(value, wrapped.thenSync());
+        assertEquals(null, wrapped.exceptSync());
+    }
+
+    /**
+     * <b>Test {@link PromiseFactory#wrap(Promise)}, ensure that already rejected promises are resolved inline.</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.
+     * <p>
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     * <p>
+     * <b>NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.</b>
+     * <p>
+     * {@code @param promise The promise you want to wrap.}
+     * <p>
+     * {@code @param <T>     The type of the promise.}
+     * <p>
+     * {@code @return A new promise.}
+     */
+    @Test
+    public void testWrapCase3RejectedWillBeSynced() {
+        Throwable exception = new Throwable();
+        @SuppressWarnings("unchecked") Promise<Object> promise = mock(Promise.class);
+        when(promise.getState()).thenReturn(PromiseState.REJECTED);
+        when(promise.thenSync()).thenReturn(null);
+        when(promise.exceptSync()).thenReturn(exception);
+
+        Promise<Object> wrapped = this.getFactory().wrap(promise);
+
+        assertEquals(PromiseState.REJECTED, wrapped.getState());
+        assertEquals(null, wrapped.thenSync());
+        assertEquals(exception, wrapped.exceptSync());
+    }
+
+    /**
+     * <b>Test {@link PromiseFactory#wrap(Promise)}, will fulfill a currently pending promise asynchronously.</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * <b>Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.</b>
+     * <p>
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     * <p>
+     * NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.
+     * <p>
+     * {@code @param promise The promise you want to wrap.}
+     * <p>
+     * {@code @param <T>     The type of the promise.}
+     * <p>
+     * {@code @return A new promise.}
+     */
+    @Test
+    public void testWrapCase4FulfillAsync() {
+        BlockingPromise<Integer> blocker = new BlockingPromise<>(this.getFactory());
+        Promise<Integer> wrapped = this.getFactory().wrap(blocker.getPromise());
+
+        assertEquals(PromiseState.PENDING, wrapped.getState());
+
+        blocker.fulfill(5);
+
+        assertEquals(5, wrapped.thenSync().intValue());
+        assertEquals(null, wrapped.exceptSync());
+        assertEquals(PromiseState.FULFILLED, wrapped.getState());
+    }
+
+    /**
+     * <b>Test {@link PromiseFactory#wrap(Promise)}, will reject a currently pending promise asynchronously.</b>
+     * <p>
+     * --------------------------------------------
+     * <p>
+     * <b>Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.</b>
+     * <p>
+     * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
+     * require one or the other, and some will require both.
+     * <p>
+     * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
+     * in promise implementations.
+     * <p>
+     * NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.
+     * <p>
+     * {@code @param promise The promise you want to wrap.}
+     * <p>
+     * {@code @param <T>     The type of the promise.}
+     * <p>
+     * {@code @return A new promise.}
+     */
+    @Test
+    public void testWrapCase5RejectAsync() {
+        BlockingPromise<Integer> blocker = new BlockingPromise<>(this.getFactory());
+        Promise<Integer> wrapped = this.getFactory().wrap(blocker.getPromise());
+
+        Throwable exception = new Throwable();
+
+        assertEquals(PromiseState.PENDING, wrapped.getState());
+
+        blocker.reject(exception);
+
+        assertEquals(null, wrapped.thenSync());
+        assertEquals(exception, wrapped.exceptSync());
+        assertEquals(PromiseState.REJECTED, wrapped.getState());
     }
 
     /**
@@ -865,5 +1073,17 @@ public abstract class PromiseFactoryTest {
         assertNull(promise.exceptSync());
         assertEquals(PromiseState.FULFILLED, promise.getState());
         assertEquals("yes", promise.thenSync());
+    }
+
+    @Test
+    public void testBlockingPromiseSelfResolutionException() {
+        BlockingPromise<Object> blocker = new BlockingPromise<>(this.getFactory());
+
+        try {
+            blocker.fulfill(blocker.getPromise());
+            fail("promises should throw a self resolution exception if they try to resolve themselves.");
+        } catch (SelfResolutionException e) {
+            assertNotNull(e);
+        }
     }
 }

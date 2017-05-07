@@ -14,10 +14,13 @@ public interface PromiseFactory {
      * <p>
      * The action parameter format is {@code (fulfill, reject) -> // stuff}.
      * <p>
-     * The first call to either fulfill or reject will be the resolved value. They may throw exceptions for subsequent
-     * calls. If no call is made within action, then the state of the promise <b>must</b> be {@code PENDING} immediately
-     * after action completes. The implementation of {@link BlockingPromise} takes
-     * advantage of this behaviour.
+     * The first call to either fulfill or reject will be the resolved value. Both of these methods <b>must</b> throw a
+     * {@link MutatedStateException} for any subsequent calls. If no call is made within action, then the state of the
+     * promise <b>must</b> be {@code PENDING} immediately after action completes.
+     * The implementation of {@link BlockingPromise} takes advantage of this behaviour.
+     * <p>
+     * If fulfill is used to attempt to <b>resolve a promise with itself</b>, it <b>must</b> throw a
+     * {@link SelfResolutionException}.
      * <p>
      * Any {@code Throwable throwable} that is thrown, within the action, will be the equivalent of calling
      * {@code reject.accept(throwable)}.
@@ -61,12 +64,17 @@ public interface PromiseFactory {
     <T> Promise<T> fulfill(T value);
 
     /**
-     * Return a promise created by this PromiseFactory, from any given promise, that will resolve in the same way.
+     * Return a promise created by this {@link PromiseFactory}, from any given promise, that will resolve in the same
+     * way.
+     * <p>
      * Performs a similar but tangential function to {@link PromiseApi#resolve(Object, Class)}, some use cases will
      * require one or the other, and some will require both.
      * <p>
      * This method is provided as a convenience, for cases when you need to ensure certain behaviour, due to differences
      * in promise implementations.
+     * <p>
+     * NOTE: The returned promise <b>must</b> be resolved <b>not pending</b>, if the promise to wrap was already
+     * resolved.
      *
      * @param promise The promise you want to wrap.
      * @param <T>     The type of the promise.

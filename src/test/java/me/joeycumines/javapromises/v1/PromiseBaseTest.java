@@ -9,8 +9,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -444,7 +443,7 @@ public class PromiseBaseTest {
         Vector<Long> resultList = new Vector<Long>();
         ArrayList<Thread> threadList = new ArrayList<Thread>();
 
-        AtomicInteger totalSuccess = new AtomicInteger();
+        AtomicInteger totalSuccess = new AtomicInteger(0);
         totalSuccess.set(0);
 
         for (int x = 0; x < 10; x++) {
@@ -521,5 +520,50 @@ public class PromiseBaseTest {
 
         // check that we only successfully resolved one successfully
         assertEquals(1, totalSuccess.get());
+    }
+
+    /**
+     * Implementation of PromiseBase to test underlying functionality, exposes reject, fulfill, resolve.
+     */
+    class PromiseBaseShell<T> extends PromiseBase<T> {
+        @Override
+        public PromiseBase<T> reject(Throwable exception) throws MutatedStateException, NullPointerException {
+            return super.reject(exception);
+        }
+
+        @Override
+        public PromiseBase<T> fulfill(T value) throws SelfResolutionException, MutatedStateException {
+            return super.fulfill(value);
+        }
+
+        @Override
+        public PromiseBase<T> resolve(Promise<? extends T> promise) throws SelfResolutionException, MutatedStateException {
+            return super.resolve(promise);
+        }
+
+        @Override
+        public <U> Promise<U> then(Function<? super T, ? extends Promise<? extends U>> callback) {
+            return null;
+        }
+
+        @Override
+        public <U> Promise<U> then(BiConsumer<? super T, Consumer<? super U>> callback) {
+            return null;
+        }
+
+        @Override
+        public Promise<T> except(Function<Throwable, ? extends Promise<? extends T>> callback) {
+            return null;
+        }
+
+        @Override
+        public Promise<T> except(BiConsumer<Throwable, Consumer<? super T>> callback) {
+            return null;
+        }
+
+        @Override
+        public <U> Promise<U> always(BiFunction<? super T, Throwable, ? extends Promise<? extends U>> callback) {
+            return null;
+        }
     }
 }

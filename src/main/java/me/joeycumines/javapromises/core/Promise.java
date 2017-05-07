@@ -77,7 +77,7 @@ public interface Promise<T> {
      * @return A promise which will resolve after the previous promise(s) AND any inner operations.
      * @throws NullPointerException If callback is null.
      */
-    <U> Promise<U> then(Function<? super T, Promise<? extends U>> callback);
+    <U> Promise<U> then(Function<? super T, ? extends Promise<? extends U>> callback);
 
     /**
      * Specify a callback to be run on successful resolution {@code FULFILLED} of this, and return a new promise,
@@ -135,7 +135,7 @@ public interface Promise<T> {
      * @return A promise which will resolve after the previous promise(s) AND any inner operations.
      * @throws NullPointerException If callback is null.
      */
-    Promise<T> except(Function<Throwable, Promise<? extends T>> callback);
+    Promise<T> except(Function<Throwable, ? extends Promise<? extends T>> callback);
 
     /**
      * Specify a callback to be run if this resolves with a failed state {@code REJECTED}, and return a new promise,
@@ -194,7 +194,7 @@ public interface Promise<T> {
      * @return A promise which will resolve after the previous promise AND any inner operations.
      * @throws NullPointerException If callback is null.
      */
-    <U> Promise<U> always(BiFunction<? super T, Throwable, Promise<? extends U>> callback);
+    <U> Promise<U> always(BiFunction<? super T, Throwable, ? extends Promise<? extends U>> callback);
 
     /**
      * Calling this method will block the current thread until {@code this} is resolved (<b>not</b> {@code PENDING}).

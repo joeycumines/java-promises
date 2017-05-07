@@ -2,7 +2,6 @@ package me.joeycumines.javapromises.core;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -157,7 +156,7 @@ public abstract class PromiseTest {
 
     @Test
     public void testLargeChainOfThen() {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
         Promise<Integer> promise = this.getFactory().fulfill(0);
 
         for (int x = 0; x < 50; x++) {
@@ -261,7 +260,7 @@ public abstract class PromiseTest {
 
         assertEquals(PromiseState.PENDING, promise.getState());
 
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger(0);
 
         RuntimeException exception = new RuntimeException();
 
@@ -503,8 +502,8 @@ public abstract class PromiseTest {
      */
     @Test
     public void testInputRejected() {
-        AtomicInteger compare = new AtomicInteger();
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger compare = new AtomicInteger(0);
+        AtomicInteger counter = new AtomicInteger(0);
         Consumer<Integer> check = (times) -> {
             assertEquals(compare.addAndGet(times), counter.get());
         };
@@ -555,8 +554,8 @@ public abstract class PromiseTest {
      */
     @Test
     public void testInputFulfilled() {
-        AtomicInteger compare = new AtomicInteger();
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger compare = new AtomicInteger(0);
+        AtomicInteger counter = new AtomicInteger(0);
         Consumer<Integer> check = (times) -> {
             assertEquals(compare.addAndGet(times), counter.get());
         };
