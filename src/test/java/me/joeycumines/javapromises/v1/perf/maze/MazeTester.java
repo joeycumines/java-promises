@@ -1,5 +1,6 @@
 package me.joeycumines.javapromises.v1.perf.maze;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -7,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class MazeTester {
+    private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException();
     private final Maze maze;
 
     public MazeTester(int breadth, int depth) {
@@ -63,6 +65,45 @@ public class MazeTester {
         for (MazeRunner nextRunner : nextRunnerArray) {
             executor.execute(() -> this.solveMultiThreaded(executor, result, nextSol, nextRunner));
         }
+    }
+
+    private CompletableFuture<String> solveUsingCompletableFuture(MazeSolution solution, MazeRunner runner) {
+        MazeSolution sol = solution.copy().note(runner);
+
+        if (maze.end(runner)) {
+            return CompletableFuture.completedFuture(sol.get());
+        }
+
+        MazeRunner[] nextRunnerArray = runner.next();
+
+        if (0 == nextRunnerArray.length) {
+            CompletableFuture<String> future = new CompletableFuture<>();
+            future.completeExceptionally(RUNTIME_EXCEPTION);
+            return future;
+        }
+
+        // complete if any of the options complete
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        for (MazeRunner nextRunner : nextRunnerArray) {
+            // it would probably run quicker if we had this outside the loop BUT this is the same as the promise test
+            CompletableFuture.runAsync(() -> {
+                this.solveUsingCompletableFuture(sol, nextRunner)
+                        .thenAccept(future::complete);
+            });
+        }
+
+        return future;
+    }
+
+    public Long solveUsingCompletableFuture() {
+        Long time = System.currentTimeMillis();
+
+        String solution = this.solveUsingCompletableFuture(new MazeSolution(), this.maze.start()).join();
+
+        time = System.currentTimeMillis() - time;
+        assertEquals(this.maze.getSolution(), solution);
+        return time;
     }
 
     public Long solveMultiThreaded() {

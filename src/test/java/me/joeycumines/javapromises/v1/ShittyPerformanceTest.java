@@ -96,6 +96,7 @@ public class ShittyPerformanceTest {
             System.out.println("--maze generation complete--");
             System.out.println("[control] maze solution single threaded took (ms): " + mazeTester.solveSingleThreaded());
             System.out.println("[control] maze solution multi threaded took (ms): " + mazeTester.solveMultiThreaded());
+            System.out.println("[control] maze solution using CompletableFuture took (ms): " + mazeTester.solveUsingCompletableFuture());
 
             consoleTest.accept("maze test", (api) -> this.testMaze(api, mazeTester, new MazeSolution(), mazeTester.getMaze().start())
                     .then((String solution) -> {
