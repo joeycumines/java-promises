@@ -9,7 +9,10 @@ import java.util.Objects;
  */
 public abstract class PromiseBase<T> implements Promise<T> {
     /**
-     * Use this as a lock against which you can synchronize the state. Don't you dare expose it.
+     * Use this as a lock against which you can synchronize the state.
+     * <p>
+     * This used to be another object instanced by the constructor, but it has been changed to this, for now, since
+     * there is not any real need for a separate lock object.
      */
     protected final Object lock;
 
@@ -18,7 +21,7 @@ public abstract class PromiseBase<T> implements Promise<T> {
     private volatile Throwable exception;
 
     public PromiseBase() {
-        this.lock = new Object();
+        this.lock = this;
         this.state = PromiseState.PENDING;
         this.value = null;
         this.exception = null;

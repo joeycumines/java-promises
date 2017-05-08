@@ -137,13 +137,14 @@ public class ShittyPerformanceTest {
             }
         });
 
-        //threadCounter.start();
-
-//        consoleTest.accept("sample test", this::testSample);
+//        threadCounter.start();
 //
-        testMaze.accept(2, 6);
-        testMaze.accept(5, 6);
-        testMaze.accept(10, 6);
+//        consoleTest.accept("sample test", this::testSample);
+
+//        testMaze.accept(2, 6);
+//        testMaze.accept(5, 6);
+//        testMaze.accept(10, 6);
+//        testMaze.accept(4, 9);
         testMaze.accept(4, 11);
 //        testMaze.accept(2, 21);
 

@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 /**
  * A factory for creating {@link PromiseRunnable} instances.
  * <p>
- * Default promise runner (for the global instance) is {@link SimpleRunner}.
+ * Default promise runner (for the global instance) is {@link ExecutorRunner}.
  */
 public class PromiseRunnableFactory extends PromiseApi {
     private static PromiseRunnableFactory globalInstance;
@@ -70,7 +70,7 @@ public class PromiseRunnableFactory extends PromiseApi {
         if (null == globalInstance) {
             synchronized (PromiseRunnableFactory.class) {
                 if (null == globalInstance) {
-                    globalInstance = new PromiseRunnableFactory(SimpleRunner.getInstance());
+                    globalInstance = new PromiseRunnableFactory(ExecutorRunner.getInstance());
                 }
             }
 

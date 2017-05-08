@@ -187,7 +187,11 @@ public class PromiseRunnable<T> extends PromiseBase<T> {
     }
 
     private void broadcast() {
-        while (PromiseState.PENDING != this.getState() && !this.subscriberQueue.isEmpty()) {
+        if (PromiseState.PENDING == this.getState()) {
+            return;
+        }
+
+        while (!this.subscriberQueue.isEmpty()) {
             // no we will not be safe, if it's in the queue it needs to be in a waiting state
             PromiseRunnable<?> promise = this.subscriberQueue.poll();
             // we do need to be aware that we could have concurrent access though
