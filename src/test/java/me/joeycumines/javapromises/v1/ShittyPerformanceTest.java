@@ -1,6 +1,8 @@
 package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.*;
+import me.joeycumines.javapromises.v1.perf.mather.MathRequester;
+import me.joeycumines.javapromises.v1.perf.mather.Mather;
 import me.joeycumines.javapromises.v1.perf.maze.MazeRunner;
 import me.joeycumines.javapromises.v1.perf.maze.MazeSolution;
 import me.joeycumines.javapromises.v1.perf.maze.MazeTester;
@@ -8,9 +10,11 @@ import org.junit.Test;
 
 import java.lang.management.ManagementFactory;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -23,8 +27,9 @@ public class ShittyPerformanceTest {
     public void testApiPerformance() {
         List<Map.Entry<String, PromiseApi>> apiList = new ArrayList<>();
         apiList.add(new AbstractMap.SimpleEntry<>("1_RUNNABLE", PromiseRunnableFactory.getInstance()));
-        apiList.add(new AbstractMap.SimpleEntry<>("2_STAGE", PromiseStageFactory.getInstance()));
-        apiList.add(new AbstractMap.SimpleEntry<>("3_STAGE_DEFAULT_EXECUTOR", new PromiseStageFactory()));
+        apiList.add(new AbstractMap.SimpleEntry<>("2_RUNNABLE_FORK_JOIN_COMMON", new PromiseRunnableFactory(new ExecutorRunner(ForkJoinPool.commonPool()))));
+        apiList.add(new AbstractMap.SimpleEntry<>("3_STAGE", PromiseStageFactory.getInstance()));
+        apiList.add(new AbstractMap.SimpleEntry<>("4_STAGE_DEFAULT_EXECUTOR", new PromiseStageFactory()));
 
         Collections.shuffle(apiList);
 
@@ -137,16 +142,139 @@ public class ShittyPerformanceTest {
             }
         });
 
+        BiConsumer<Integer, Integer> testRequestResponse = (multi, size) -> {
+            System.out.println("-- Running the Request-Response");
+
+            System.out.println("-- generating requests");
+            List<MathRequester> requestList = new ArrayList<>();
+
+            for (int x = 0; x < size; x++) {
+                requestList.add(new MathRequester(Mather.getInstance().genRandomEquation1(multi)));
+            }
+
+            System.out.println("-- requests generated");
+
+            Supplier<List<MathRequester>> getRequestList = () -> {
+                List<MathRequester> list = new ArrayList<>();
+                requestList.forEach((request) -> list.add(request.redo()));
+                return Collections.synchronizedList(list);
+            };
+
+            Function<List<MathRequester>, Long> getAverageResponse = (list) -> {
+                long t = 0;
+                long c = 0;
+
+                for (MathRequester request : list) {
+                    t += request.getTime();
+                    c++;
+                }
+
+                if (0 == c) {
+                    return -1L;
+                }
+
+                return t / c;
+            };
+
+            // see how long each request would take if there was no overhead
+            Runnable singleThreadControl = () -> {
+                List<MathRequester> list = getRequestList.get();
+
+                long t = System.currentTimeMillis();
+
+                for (MathRequester request : list) {
+                    request.respond(Mather.getInstance().eval(request.request()));
+                }
+
+                t = System.currentTimeMillis() - t;
+
+                System.out.println("[control] on average the actual work should take (ms): " + getAverageResponse.apply(list));
+                System.out.println("[control] a single thread served all requests sequentially in (ms): " + t);
+            };
+
+            Runnable completableFutureControl = () -> {
+                List<MathRequester> list = getRequestList.get();
+
+                long t = System.currentTimeMillis();
+
+                AtomicReference<CompletableFuture<?>> future = new AtomicReference<>(CompletableFuture.completedFuture(null));
+
+                list.forEach((request) -> {
+                    CompletableFuture<?> f = CompletableFuture.runAsync(() -> {
+                        request.respond(Mather.getInstance().eval(request.request()));
+                    });
+
+                    future.set(CompletableFuture.allOf(future.get(), f));
+                });
+
+                future.get().join();
+
+                t = System.currentTimeMillis() - t;
+
+                System.out.println("[control] for CompletableFuture on average the work took (ms): " + getAverageResponse.apply(list));
+                System.out.println("[control] for CompletableFture the total time spent was (ms): " + t);
+            };
+
+
+            HashMap<PromiseApi, List<MathRequester>> apiTodoMap = new HashMap<>();
+            apiList.forEach((apiPair) -> apiTodoMap.put(apiPair.getValue(), getRequestList.get()));
+
+            Function<PromiseApi, Promise<?>> testPromises = (api) -> {
+                List<MathRequester> list = apiTodoMap.get(api);
+
+                List<Promise<MathRequester>> workerList = new ArrayList<>();
+
+                list.forEach((request) -> {
+                    workerList.add(api.create((fulfill, reject) -> {
+                        request.respond(Mather.getInstance().eval(request.request()));
+
+                        fulfill.accept(request);
+                    }));
+                });
+
+                return api.all(workerList);
+//                AtomicReference<Promise<?>> promise = new AtomicReference<>(api.fulfill(null));
+//
+//                list.forEach((request) -> {
+//                    Promise<?> p = api.create((fulfill, reject) -> {
+//                        request.respond(Mather.getInstance().eval(request.request()));
+//                        fulfill.accept(null);
+//                    });
+//                    promise.set(promise.get().then((r) -> p));
+//                });
+//
+//                return promise.get();
+            };
+
+            singleThreadControl.run();
+            completableFutureControl.run();
+            consoleTest.accept("MathRequester test", testPromises);
+
+            for (Map.Entry<PromiseApi, List<MathRequester>> entry : apiTodoMap.entrySet()) {
+                AtomicReference<String> name = new AtomicReference<>();
+                apiList.forEach((apiPair) -> {
+                    if (apiPair.getValue() == entry.getKey()) {
+                        name.set(apiPair.getKey());
+                    }
+                });
+                System.out.println("[result] MathRequester time for " + name.get() + " was (ms): " + getAverageResponse.apply(entry.getValue()));
+            }
+        };
+
 //        threadCounter.start();
 //
 //        consoleTest.accept("sample test", this::testSample);
-
+//
 //        testMaze.accept(2, 6);
 //        testMaze.accept(5, 6);
 //        testMaze.accept(10, 6);
 //        testMaze.accept(4, 9);
         testMaze.accept(4, 11);
 //        testMaze.accept(2, 21);
+//
+//        testRequestResponse.accept(100000, 100);
+//        testRequestResponse.accept(10000, 1000);
+        testRequestResponse.accept(10000, 10000);
 
         done.set(true);
         synchronized (done) {
