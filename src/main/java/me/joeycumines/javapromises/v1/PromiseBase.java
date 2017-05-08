@@ -14,8 +14,8 @@ public abstract class PromiseBase<T> implements Promise<T> {
     protected final Object lock;
 
     private PromiseState state;
-    private T value;
-    private Throwable exception;
+    private volatile T value;
+    private volatile Throwable exception;
 
     public PromiseBase() {
         this.lock = new Object();

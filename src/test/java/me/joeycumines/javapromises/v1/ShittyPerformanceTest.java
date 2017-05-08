@@ -137,7 +137,7 @@ public class ShittyPerformanceTest {
             }
         });
 
-        threadCounter.start();
+        //threadCounter.start();
 
 //        consoleTest.accept("sample test", this::testSample);
 //
