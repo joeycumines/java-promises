@@ -438,7 +438,7 @@ public abstract class PromiseApiTest {
     @Test
     public void testAttemptThrow() {
         RuntimeException e = new RuntimeException();
-        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>)() -> {
+        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>) () -> {
             throw e;
         });
 
@@ -449,7 +449,7 @@ public abstract class PromiseApiTest {
 
     @Test
     public void testAttemptFulfilled() {
-        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>)() -> this.getApi().fulfill(23));
+        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>) () -> this.getApi().fulfill(23));
 
         assertEquals(23, promise.thenSync().intValue());
         assertEquals(null, promise.exceptSync());
@@ -459,7 +459,7 @@ public abstract class PromiseApiTest {
     @Test
     public void testAttemptRejected() {
         Throwable e = new Throwable();
-        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>)() -> this.getApi().reject(e));
+        Promise<Integer> promise = this.getApi().attempt((Supplier<Promise<Integer>>) () -> this.getApi().reject(e));
 
         assertEquals(null, promise.thenSync());
         assertEquals(e, promise.exceptSync());
@@ -938,7 +938,8 @@ public abstract class PromiseApiTest {
         b2.getPromise().sync();
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
 
         assertEquals(PromiseState.PENDING, promise.getState());
@@ -948,7 +949,8 @@ public abstract class PromiseApiTest {
         b1.getPromise().sync();
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
 
         assertEquals(PromiseState.PENDING, promise.getState());
@@ -978,7 +980,8 @@ public abstract class PromiseApiTest {
         assertEquals(PromiseState.PENDING, promise.getState());
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
         assertEquals(PromiseState.PENDING, promise.getState());
 
@@ -1181,7 +1184,8 @@ public abstract class PromiseApiTest {
         b2.getPromise().sync();
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
 
         assertEquals("first to resolve", promise.thenSync());
@@ -1236,7 +1240,8 @@ public abstract class PromiseApiTest {
         b3.getPromise().sync();
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
 
         assertEquals(PromiseState.PENDING, promise.getState());
@@ -1245,7 +1250,8 @@ public abstract class PromiseApiTest {
         b1.getPromise().sync();
         try {
             TimeUnit.MILLISECONDS.sleep(400);
-        } catch (InterruptedException ignored) {;
+        } catch (InterruptedException ignored) {
+            ;
         }
 
         assertEquals(PromiseState.PENDING, promise.getState());
@@ -1344,6 +1350,72 @@ public abstract class PromiseApiTest {
         }
 
         assertTrue(future.isCompletedExceptionally());
+    }
+
+    @Test
+    public void testAnyVarargs() {
+        Promise<Integer> promise;
+
+        promise = this.getApi().any(this.getApi().fulfill(1));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, promise.thenSync().intValue());
+
+
+        promise = this.getApi().any(this.getApi().reject(new Exception()), this.getApi().fulfill(2));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(2, promise.thenSync().intValue());
+
+
+        promise = this.getApi().any(this.getApi().reject(new Exception()), this.getApi().reject(new Exception()), this.getApi().fulfill(3));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(3, promise.thenSync().intValue());
+    }
+
+    @Test
+    public void testAllVarargs() {
+        Promise<List<Integer>> promise;
+
+        promise = this.getApi().all(this.getApi().fulfill(1), this.getApi().fulfill(2), this.getApi().fulfill(3));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+
+        List<Integer> result = promise.thenSync();
+        assertEquals(3, result.size());
+        assertEquals(1, result.get(0).intValue());
+        assertEquals(2, result.get(1).intValue());
+        assertEquals(3, result.get(2).intValue());
+    }
+
+    @Test
+    public void testRaceVarargs() {
+        Promise<Integer> promise;
+
+        promise = this.getApi().race(this.getApi().fulfill(1));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(1, promise.thenSync().intValue());
+
+
+        promise = this.getApi().race((new BlockingPromise<Integer>(this.getApi())).getPromise(), this.getApi().fulfill(2));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(2, promise.thenSync().intValue());
+
+
+        promise = this.getApi().race((new BlockingPromise<Integer>(this.getApi())).getPromise(), (new BlockingPromise<Integer>(this.getApi())).getPromise(), this.getApi().fulfill(3));
+
+        assertEquals(PromiseState.FULFILLED, promise.getState());
+        assertEquals(3, promise.thenSync().intValue());
+
+        Exception e = new Exception();
+
+        promise = this.getApi().race((new BlockingPromise<Integer>(this.getApi())).getPromise(), this.getApi().reject(e));
+
+        assertEquals(PromiseState.REJECTED, promise.getState());
+        assertEquals(e, promise.exceptSync());
     }
 
     abstract class PromiseDummy implements Promise {

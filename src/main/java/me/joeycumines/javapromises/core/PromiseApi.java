@@ -15,6 +15,36 @@ import java.util.function.Supplier;
  */
 public abstract class PromiseApi implements PromiseFactory {
     /**
+     * @see #all(Iterable)
+     */
+    @SafeVarargs
+    public final <T> Promise<List<T>> all(Promise<? extends T> promise, Promise<? extends T>... promises) throws NullPointerException, IllegalArgumentException {
+        List<Promise<? extends T>> promiseList = new ArrayList<>(Arrays.asList(promises));
+        promiseList.add(0, promise);
+        return this.all(promiseList);
+    }
+
+    /**
+     * @see #race(Iterable)
+     */
+    @SafeVarargs
+    public final <T> Promise<T> race(Promise<? extends T> promise, Promise<? extends T>... promises) throws NullPointerException, IllegalArgumentException {
+        List<Promise<? extends T>> promiseList = new ArrayList<>(Arrays.asList(promises));
+        promiseList.add(0, promise);
+        return this.race(promiseList);
+    }
+
+    /**
+     * @see #any(Iterable)
+     */
+    @SafeVarargs
+    public final <T> Promise<T> any(Promise<? extends T> promise, Promise<? extends T>... promises) throws NullPointerException, IllegalArgumentException {
+        List<Promise<? extends T>> promiseList = new ArrayList<>(Arrays.asList(promises));
+        promiseList.add(0, promise);
+        return this.any(promiseList);
+    }
+
+    /**
      * Given an iterable of one or more promises, return a promise, that will resolve with a {@link List} containing the
      * fulfillment values of each input promise, provided every promise resolves successfully. <b>The returned promise
      * will reject with same reason as the first (if any) input promise that rejects.</b> This will not wait on any
