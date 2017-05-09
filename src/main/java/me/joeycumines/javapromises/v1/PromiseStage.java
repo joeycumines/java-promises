@@ -309,7 +309,7 @@ public class PromiseStage<T> extends PromiseBase<T> {
      * @param <T>      The type of the returned promise.
      * @return A new promise that will resolve the same as the provided one that is an instance of {@link PromiseStage}.
      */
-    static <T> Promise<T> wrap(CompletionStage<T> stage, Executor executor, Promise<? extends T> promise) {
+    public static <T> Promise<T> wrap(CompletionStage<T> stage, Executor executor, Promise<? extends T> promise) {
         Objects.requireNonNull(stage);
         Objects.requireNonNull(promise);
 

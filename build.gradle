@@ -10,6 +10,7 @@ tasks.withType(Test) {
 // tag::repositories[]
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 // end::repositories[]
 
@@ -24,6 +25,8 @@ jar {
 dependencies {
 	testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.+'
+    testCompile 'com.github.lukas-krecan:completion-stage:completion-stage-0.0.9'
+    testCompile 'com.github.joeycumines:j8stages:0.0.0'
 }
 // end::dependencies[]
 

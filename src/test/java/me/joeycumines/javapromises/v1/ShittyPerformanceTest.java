@@ -1,6 +1,8 @@
 package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.*;
+import me.joeycumines.javapromises.v1.external.PromiseJavacrumbsFactory;
+import me.joeycumines.javapromises.v1.external.PromiseMyFutureFactory;
 import me.joeycumines.javapromises.v1.perf.mather.MathRequester;
 import me.joeycumines.javapromises.v1.perf.mather.Mather;
 import me.joeycumines.javapromises.v1.perf.maze.MazeRunner;
@@ -29,6 +31,10 @@ public class ShittyPerformanceTest {
         apiList.add(new AbstractMap.SimpleEntry<>("2_RUNNABLE_FORK_JOIN_COMMON", new PromiseRunnableFactory(new ExecutorRunner(ForkJoinPool.commonPool()))));
         apiList.add(new AbstractMap.SimpleEntry<>("3_STAGE", PromiseStageFactory.getInstance()));
         apiList.add(new AbstractMap.SimpleEntry<>("4_STAGE_DEFAULT_EXECUTOR", new PromiseStageFactory()));
+        apiList.add(new AbstractMap.SimpleEntry<>("5_JAVACRUMBS", PromiseJavacrumbsFactory.getInstance()));
+        apiList.add(new AbstractMap.SimpleEntry<>("6_JAVACRUMBS_FORK_JOIN_COMMON", new PromiseJavacrumbsFactory(ForkJoinPool.commonPool())));
+        apiList.add(new AbstractMap.SimpleEntry<>("7_MYFUTURE", PromiseMyFutureFactory.getInstance()));
+        apiList.add(new AbstractMap.SimpleEntry<>("8_MYFUTURE_FORK_JOIN_COMMON", new PromiseMyFutureFactory(ForkJoinPool.commonPool())));
 
         Collections.shuffle(apiList);
 

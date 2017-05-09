@@ -2,6 +2,8 @@ package me.joeycumines.javapromises.v1;
 
 import me.joeycumines.javapromises.core.PromiseFactory;
 import me.joeycumines.javapromises.core.PromiseTest;
+import me.joeycumines.javapromises.v1.external.PromiseJavacrumbsFactory;
+import me.joeycumines.javapromises.v1.external.PromiseMyFutureFactory;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,7 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PromiseInterOpTest extends PromiseTest {
     private static final PromiseFactory[] FACTORY_LIST = new PromiseFactory[]{
             PromiseRunnableFactory.getInstance(),
-            PromiseStageFactory.getInstance()
+            PromiseStageFactory.getInstance(),
+            PromiseMyFutureFactory.getInstance(),
+            PromiseJavacrumbsFactory.getInstance()
     };
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
