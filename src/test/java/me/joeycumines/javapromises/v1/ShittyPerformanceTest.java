@@ -143,7 +143,7 @@ public class ShittyPerformanceTest {
         });
 
         BiConsumer<Integer, Integer> testRequestResponse = (multi, size) -> {
-            System.out.println("-- Running the Request-Response");
+            System.out.println("-- Running the Request-Response test for difficulty" + multi + " and " + size + " connections");
 
             System.out.println("-- generating requests");
             List<MathRequester> requestList = new ArrayList<>();
@@ -212,7 +212,7 @@ public class ShittyPerformanceTest {
                 t = System.currentTimeMillis() - t;
 
                 System.out.println("[control] for CompletableFuture on average the work took (ms): " + getAverageResponse.apply(list));
-                System.out.println("[control] for CompletableFture the total time spent was (ms): " + t);
+                System.out.println("[control] for CompletableFuture the total time spent was (ms): " + t);
             };
 
 
@@ -267,14 +267,15 @@ public class ShittyPerformanceTest {
 //
 //        testMaze.accept(2, 6);
 //        testMaze.accept(5, 6);
-//        testMaze.accept(10, 6);
+        testMaze.accept(10, 6);
 //        testMaze.accept(4, 9);
         testMaze.accept(4, 11);
 //        testMaze.accept(2, 21);
 //
 //        testRequestResponse.accept(100000, 100);
-//        testRequestResponse.accept(10000, 1000);
-        testRequestResponse.accept(10000, 10000);
+        testRequestResponse.accept(10000, 1000);
+//        testRequestResponse.accept(10000, 10000);
+        testRequestResponse.accept(100, 100000);
 
         done.set(true);
         synchronized (done) {
