@@ -3,6 +3,7 @@ package me.joeycumines.javapromises.core;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -599,5 +600,30 @@ public abstract class PromiseTest {
             return null;
         }).sync();
         check.accept(1);
+    }
+
+    @Test
+    public void testManyCallbacksAndDeepRecursion() {
+        BlockingPromise<Long> master = new BlockingPromise<>(this.getFactory());
+
+        AtomicReference<Promise<Long>> slave = new AtomicReference<>(master.getPromise());
+
+        // 1 000 000
+        int levels = 1000000;
+
+        Runnable runnable = () -> {
+            Promise<Long> s = slave.get();
+            slave.set(master.getPromise().then((r) -> s.then((v, fulfill) -> fulfill.accept(v + 1))));
+        };
+
+        for (int i = 0; i < levels; i++) {
+            runnable.run();
+        }
+
+        master.fulfill(0L);
+
+        assertEquals(levels, slave.get().thenSync().intValue());
+        assertNull(slave.get().exceptSync());
+        assertEquals(PromiseState.FULFILLED, slave.get().getState());
     }
 }
