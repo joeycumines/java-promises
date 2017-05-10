@@ -1,0 +1,160 @@
+:clean
+:compileJava
+:processResources NO-SOURCE
+:classes
+:compileTestJava
+:processTestResources NO-SOURCE
+:testClasses
+:test
+
+me.joeycumines.javapromises.v1.ShittyPerformanceTest > testApiPerformance STANDARD_OUT
+    --generating maze for 10(breadth) x 6(depth)--
+    --maze generation complete--
+    [control] maze solution single threaded took (ms): 14
+    [control] maze solution multi threaded took (ms): 97
+    [control] maze solution using CompletableFuture took (ms): 96
+    RUNNING: maze test
+      + started testing 7_MYFUTURE
+      - stopped testing 7_MYFUTURE
+      + started testing 5_JAVACRUMBS
+      - stopped testing 5_JAVACRUMBS
+      + started testing 1_RUNNABLE
+      - stopped testing 1_RUNNABLE
+      + started testing 2_RUNNABLE_FORK_JOIN_COMMON
+      - stopped testing 2_RUNNABLE_FORK_JOIN_COMMON
+      + started testing 8_MYFUTURE_FORK_JOIN_COMMON
+      - stopped testing 8_MYFUTURE_FORK_JOIN_COMMON
+      + started testing 4_STAGE_DEFAULT_EXECUTOR
+      - stopped testing 4_STAGE_DEFAULT_EXECUTOR
+      + started testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      - stopped testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      + started testing 3_STAGE
+      - stopped testing 3_STAGE
+    COMPLETED: maze test
+    #1 2_RUNNABLE_FORK_JOIN_COMMON ( 82 ms )
+    #2 1_RUNNABLE ( 110 ms )
+    #3 8_MYFUTURE_FORK_JOIN_COMMON ( 111 ms )
+    #4 7_MYFUTURE ( 160 ms )
+    #5 3_STAGE ( 260 ms )
+    #6 4_STAGE_DEFAULT_EXECUTOR ( 261 ms )
+    #7 6_JAVACRUMBS_FORK_JOIN_COMMON ( 338 ms )
+    #8 5_JAVACRUMBS ( 410 ms )
+    --generating maze for 4(breadth) x 11(depth)--
+    --maze generation complete--
+    [control] maze solution single threaded took (ms): 10
+    [control] maze solution multi threaded took (ms): 1328
+    [control] maze solution using CompletableFuture took (ms): 117
+    RUNNING: maze test
+      + started testing 7_MYFUTURE
+      - stopped testing 7_MYFUTURE
+      + started testing 5_JAVACRUMBS
+      - stopped testing 5_JAVACRUMBS
+      + started testing 1_RUNNABLE
+      - stopped testing 1_RUNNABLE
+      + started testing 2_RUNNABLE_FORK_JOIN_COMMON
+      - stopped testing 2_RUNNABLE_FORK_JOIN_COMMON
+      + started testing 8_MYFUTURE_FORK_JOIN_COMMON
+      - stopped testing 8_MYFUTURE_FORK_JOIN_COMMON
+      + started testing 4_STAGE_DEFAULT_EXECUTOR
+      - stopped testing 4_STAGE_DEFAULT_EXECUTOR
+      + started testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      - stopped testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      + started testing 3_STAGE
+      - stopped testing 3_STAGE
+    COMPLETED: maze test
+    #1 2_RUNNABLE_FORK_JOIN_COMMON ( 1664 ms )
+    #2 8_MYFUTURE_FORK_JOIN_COMMON ( 1859 ms )
+    #3 1_RUNNABLE ( 1922 ms )
+    #4 7_MYFUTURE ( 2954 ms )
+    #5 4_STAGE_DEFAULT_EXECUTOR ( 4824 ms )
+    #6 3_STAGE ( 5006 ms )
+    #7 6_JAVACRUMBS_FORK_JOIN_COMMON ( 5970 ms )
+    #8 5_JAVACRUMBS ( 6254 ms )
+    -- Running the Request-Response test for difficulty 10000 and 1000 connections
+    -- generating requests
+    -- requests generated
+    [control] on average the actual work should take (ms): 1
+    [control] a single thread served all requests sequentially in (ms): 1654
+    [control] for CompletableFuture on average the work took (ms): 3
+    [control] for CompletableFuture the total time spent was (ms): 484
+    RUNNING: MathRequester test
+      + started testing 7_MYFUTURE
+      - stopped testing 7_MYFUTURE
+      + started testing 5_JAVACRUMBS
+      - stopped testing 5_JAVACRUMBS
+      + started testing 1_RUNNABLE
+      - stopped testing 1_RUNNABLE
+      + started testing 2_RUNNABLE_FORK_JOIN_COMMON
+      - stopped testing 2_RUNNABLE_FORK_JOIN_COMMON
+      + started testing 8_MYFUTURE_FORK_JOIN_COMMON
+      - stopped testing 8_MYFUTURE_FORK_JOIN_COMMON
+      + started testing 4_STAGE_DEFAULT_EXECUTOR
+      - stopped testing 4_STAGE_DEFAULT_EXECUTOR
+      + started testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      - stopped testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      + started testing 3_STAGE
+      - stopped testing 3_STAGE
+    COMPLETED: MathRequester test
+    #1 2_RUNNABLE_FORK_JOIN_COMMON ( 452 ms )
+    #2 8_MYFUTURE_FORK_JOIN_COMMON ( 456 ms )
+    #3 4_STAGE_DEFAULT_EXECUTOR ( 462 ms )
+    #4 6_JAVACRUMBS_FORK_JOIN_COMMON ( 474 ms )
+    #5 3_STAGE ( 486 ms )
+    #6 5_JAVACRUMBS ( 505 ms )
+    #7 1_RUNNABLE ( 524 ms )
+    #8 7_MYFUTURE ( 597 ms )
+    [result] MathRequester time for 2_RUNNABLE_FORK_JOIN_COMMON was (ms): 3
+    [result] MathRequester time for 8_MYFUTURE_FORK_JOIN_COMMON was (ms): 3
+    [result] MathRequester time for 4_STAGE_DEFAULT_EXECUTOR was (ms): 3
+    [result] MathRequester time for 5_JAVACRUMBS was (ms): 5
+    [result] MathRequester time for 3_STAGE was (ms): 4
+    [result] MathRequester time for 6_JAVACRUMBS_FORK_JOIN_COMMON was (ms): 3
+    [result] MathRequester time for 7_MYFUTURE was (ms): 5
+    [result] MathRequester time for 1_RUNNABLE was (ms): 7
+    -- Running the Request-Response test for difficulty 100 and 100000 connections
+    -- generating requests
+    -- requests generated
+    [control] on average the actual work should take (ms): 0
+    [control] a single thread served all requests sequentially in (ms): 1751
+    [control] for CompletableFuture on average the work took (ms): 0
+    [control] for CompletableFuture the total time spent was (ms): 629
+    RUNNING: MathRequester test
+      + started testing 7_MYFUTURE
+      - stopped testing 7_MYFUTURE
+      + started testing 5_JAVACRUMBS
+      - stopped testing 5_JAVACRUMBS
+      + started testing 1_RUNNABLE
+      - stopped testing 1_RUNNABLE
+      + started testing 2_RUNNABLE_FORK_JOIN_COMMON
+      + started testing 8_MYFUTURE_FORK_JOIN_COMMON
+      - stopped testing 2_RUNNABLE_FORK_JOIN_COMMON
+      - stopped testing 8_MYFUTURE_FORK_JOIN_COMMON
+      + started testing 4_STAGE_DEFAULT_EXECUTOR
+      - stopped testing 4_STAGE_DEFAULT_EXECUTOR
+      + started testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      - stopped testing 6_JAVACRUMBS_FORK_JOIN_COMMON
+      + started testing 3_STAGE
+      - stopped testing 3_STAGE
+    COMPLETED: MathRequester test
+    #1 4_STAGE_DEFAULT_EXECUTOR ( 588 ms )
+    #2 8_MYFUTURE_FORK_JOIN_COMMON ( 606 ms )
+    #3 2_RUNNABLE_FORK_JOIN_COMMON ( 607 ms )
+    #4 3_STAGE ( 660 ms )
+    #5 6_JAVACRUMBS_FORK_JOIN_COMMON ( 664 ms )
+    #6 5_JAVACRUMBS ( 681 ms )
+    #7 1_RUNNABLE ( 717 ms )
+    #8 7_MYFUTURE ( 1227 ms )
+    [result] MathRequester time for 2_RUNNABLE_FORK_JOIN_COMMON was (ms): 0
+    [result] MathRequester time for 8_MYFUTURE_FORK_JOIN_COMMON was (ms): 0
+    [result] MathRequester time for 4_STAGE_DEFAULT_EXECUTOR was (ms): 0
+    [result] MathRequester time for 5_JAVACRUMBS was (ms): 0
+    [result] MathRequester time for 3_STAGE was (ms): 0
+    [result] MathRequester time for 6_JAVACRUMBS_FORK_JOIN_COMMON was (ms): 0
+    [result] MathRequester time for 7_MYFUTURE was (ms): 0
+    [result] MathRequester time for 1_RUNNABLE was (ms): 0
+
+me.joeycumines.javapromises.v1.ShittyPerformanceTest > testApiPerformance PASSED
+
+BUILD SUCCESSFUL
+
+Total time: 54.034 secs
