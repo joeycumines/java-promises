@@ -9,6 +9,56 @@ TODO: write this readme
 
 
 ## (Bad) Benchmark - 100x Mean + STDDEV (Windows 10 x64)
+Out of interest, I implemented some basic benchmarks (using `System.currentTimeMillis()`), which can be found and run 
+via the `ShittyPerformanceTest` class, using JUnit. In an effort to make it slightly more scientific, I wrote controls
+for each test, single threaded, and using `CompletableFuture` and/or basic multi threading, and tested 4 separate
+implementations of my `Promise` and related interfaces, including my initial `PromiseRunnable`, and 3 others that all
+use `PromiseStage`, a wrapper for `CompletionStage`, which allowed me to test against (in a possibly unfair way),
+the `CompletableFuture` class, and two other libraries I found on GitHub, 
+[lukas-krecan/completion-stage](https://github.com/lukas-krecan/completion-stage) and
+[chrisalice/j8stages](https://github.com/chrisalice/j8stages).
+Each of these promise tests were run with two executors, a cached thread pool, and a common fork join pool, for a total
+of 8 separate iterations of each test, iterations which were run in a randomized order each time, and each time worked 
+from the same randomized inputs (which the controls also worked from). Promise test codes starting with `3` and `4`
+are using the `CompletableFuture` as a base.
+
+The tests cases are each one of two scenarios, a brute force tree search, and a request-response style async test, 
+both which are contrived, but which have provided some interesting results. I tried to keep the setup tasks consistent
+and if possible out of the actual time, for each iteration of each test, be it promise or control.
+
+The test case was run 100 times using windows batch scripting (I originally ran it on Ubuntu using OpenJDK, but I felt
+a Windows desktop would be a more fair test), output to text files, then combined using a script I wrote for the
+purpose. The result below was generated from console output, where, after some line normalization, any changed numeric 
+values where first collated, processed, then re-inserted into their original positions, in the format `|mean (stddev)|`.
+In terms of the relative performance, running it using OpenJDK had consistent results with this test.
+
+### "Maze" benchmark - brute force tree search
+This test was the first one I wrote, and likely more naive. It consists of a tree structure where each parent has an
+array of child nodes, where the algorithm must find the success leaf node, which is selected pseudo-randomly. To prove
+it has found the success case, the algorithm must find the combined string of each unique node id, in the path from the
+start to the finish.
+
+This one was interesting. The single threaded solution obviously had very variable cost, but still managed to
+outperform all others, which I can only assume is a combination of the type of task, and not having the overhead in
+creating objects. If I had run it with a considerable deeper tree, then there would probably be more benefit to
+multiple threads. It is also probably related to the fairly decent single core speed of the processor used.
+
+The most interesting part of this was how well `CompletableFuture` performed, considerably more then my multi threaded
+implementation, though that could be considered a side effect of using a fixed thread pool of `40` for the multi 
+threaded test (I have run a few re-tests on that one, it seems using the fork join common pool makes it much quicker).
+If I had to guess, I would say that the difference in speed is due to the cost of the promise implementation's general
+implementation; if you look at code for the future test, in `MazeTester`, the `CompletableFuture` control logic is
+very direct. While the `PromiseApi.any` implementation used for all promise tests does support early exit, it is very
+likely sub-optimal for this particular case, where there is no internal cost in compute time to even the odds. The
+promise api must go through quite a few more callbacks, objects, and threads for each one of the future implementation.
+
+The promise results are below, I will let you draw your own conclusions. Both my implementation, and the implementation
+using the j8stage repo's `MyFuture` class came out on top, with mine edging ahead. Following the same line of inquiry
+as before, this result supports the conclusion that the cost is likely contributed to one or all of the number of
+callbacks, threads, or objects created, as the `PromiseStage` implementation necessitated less direct logic routes, if
+it was to encapsulate any `CompletionStage` while providing the same `Promise` functionality.
+
+### The combined results of 100 consecutive (separate), somewhat primitive benchmarks
 ```
     --generating maze for 10(breadth) x 6(depth)--
     --maze generation complete--
@@ -92,3 +142,18 @@ TODO: write this readme
     [result] MathRequester time for 8_MYFUTURE_FORK_JOIN_COMMON was (ms): 0
 Total time: |53.13 (1.27)| secs
 ```
+
+## License - SEE LICENSE
+Copyright 2017 Joseph Cumines
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.

@@ -3,6 +3,7 @@ package me.joeycumines.javapromises.v1.perf.maze;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -108,7 +109,7 @@ public class MazeTester {
 
     public Long solveMultiThreaded() {
         AtomicReference<String> result = new AtomicReference<>();
-        Executor executor = Executors.newFixedThreadPool(40);
+        Executor executor = ForkJoinPool.commonPool();
         result.set(null);
 
         Long time = System.currentTimeMillis();
