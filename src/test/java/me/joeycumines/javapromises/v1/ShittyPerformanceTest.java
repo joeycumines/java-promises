@@ -314,6 +314,35 @@ public class ShittyPerformanceTest {
         }
 
         return api.any(promiseList);
+//
+//        MazeSolution sol = solution.copy().note(runner);
+//
+//        if (mazeTester.getMaze().end(runner)) {
+//            return api.fulfill(sol.get());
+//        }
+//
+//        MazeRunner[] nextRunnerArray = runner.next();
+//
+//        if (0 == nextRunnerArray.length) {
+//            return api.reject(RUNTIME_EXCEPTION);
+//        }
+//
+//        BlockingPromise<String> blocker = new BlockingPromise<>(api);
+//
+//        List<MazeRunner> runnerList = Arrays.asList(nextRunnerArray);
+//
+//        runnerList.forEach((nextRunner) ->{
+//            this.testMaze(api, mazeTester, sol, nextRunner)
+//                    .then((r) -> {
+//                        if (PromiseState.PENDING != blocker.getPromise().getState()) {
+//                            return null;
+//                        }
+//                        blocker.fulfill(r);
+//                        return null;
+//                    });
+//        });
+//
+//        return blocker.getPromise();
     }
 
     private Promise<?> testSample(PromiseApi api) {
