@@ -294,31 +294,12 @@ public class ShittyPerformanceTest {
      * @see MazeTester#solveSingleThreaded(MazeSolution, MazeRunner)
      */
     private Promise<String> testMaze(PromiseApi api, MazeTester mazeTester, MazeSolution solution, MazeRunner runner) {
-        // we are trying to traverse runner
-        solution = solution.copy().note(runner);
-
-        if (mazeTester.getMaze().end(runner)) {
-            return api.fulfill(solution.get());
-        }
-
-        MazeRunner[] nextRunnerArray = runner.next();
-
-        if (0 == nextRunnerArray.length) {
-            return api.reject(RUNTIME_EXCEPTION);
-        }
-
-        List<Promise<String>> promiseList = new ArrayList<>();
-
-        for (MazeRunner nextRunner : nextRunnerArray) {
-            promiseList.add(this.testMaze(api, mazeTester, solution, nextRunner));
-        }
-
-        return api.any(promiseList);
-//
-//        MazeSolution sol = solution.copy().note(runner);
+//        // this section was the original, benchmarked implementation
+//        // we are trying to traverse runner
+//        solution = solution.copy().note(runner);
 //
 //        if (mazeTester.getMaze().end(runner)) {
-//            return api.fulfill(sol.get());
+//            return api.fulfill(solution.get());
 //        }
 //
 //        MazeRunner[] nextRunnerArray = runner.next();
@@ -327,22 +308,43 @@ public class ShittyPerformanceTest {
 //            return api.reject(RUNTIME_EXCEPTION);
 //        }
 //
-//        BlockingPromise<String> blocker = new BlockingPromise<>(api);
+//        List<Promise<String>> promiseList = new ArrayList<>();
 //
-//        List<MazeRunner> runnerList = Arrays.asList(nextRunnerArray);
+//        for (MazeRunner nextRunner : nextRunnerArray) {
+//            promiseList.add(this.testMaze(api, mazeTester, solution, nextRunner));
+//        }
 //
-//        runnerList.forEach((nextRunner) ->{
-//            this.testMaze(api, mazeTester, sol, nextRunner)
-//                    .then((r) -> {
-//                        if (PromiseState.PENDING != blocker.getPromise().getState()) {
-//                            return null;
-//                        }
-//                        blocker.fulfill(r);
-//                        return null;
-//                    });
-//        });
-//
-//        return blocker.getPromise();
+//        return api.any(promiseList);
+
+        // this is the second, faster implementation, written to more closely match the CompletableFuture control test
+        MazeSolution sol = solution.copy().note(runner);
+
+        if (mazeTester.getMaze().end(runner)) {
+            return api.fulfill(sol.get());
+        }
+
+        MazeRunner[] nextRunnerArray = runner.next();
+
+        if (0 == nextRunnerArray.length) {
+            return api.reject(RUNTIME_EXCEPTION);
+        }
+
+        BlockingPromise<String> blocker = new BlockingPromise<>(api);
+
+        List<MazeRunner> runnerList = Arrays.asList(nextRunnerArray);
+
+        runnerList.forEach((nextRunner) ->{
+            this.testMaze(api, mazeTester, sol, nextRunner)
+                    .then((r) -> {
+                        if (PromiseState.PENDING != blocker.getPromise().getState()) {
+                            return null;
+                        }
+                        blocker.fulfill(r);
+                        return null;
+                    });
+        });
+
+        return blocker.getPromise();
     }
 
     private Promise<?> testSample(PromiseApi api) {
