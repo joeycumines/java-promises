@@ -1,12 +1,48 @@
 # java-promises - Writing async code to the style of JavaScript Promises
+After deciding to re-learn Java, and without any real knowledge of most Java 8 features but coming from using JavaScript
+frequently, I was very interested to learn of the `CompletableFuture` and the related `CompletionStage` interface.
+When my eyes started hurting immediately after opening the JavaDoc however, I decided it would be a valuable learning
+experience to implement my own, more friendly implementation.
 
-I kinda just sat down and wrote this, tests are on the to do list so ah it is probably completely broken
+I wrote this library with the goal of making it something I would be happy to use in production code, and to that end I
+focused on designing flexible, sensible interfaces, that we well documented and thought out and as simple as they could
+be, while delivering the functionality I wanted. It's also very close to 100% tested, though I did frequently sacrifice
+test clarity and readability for overall thoroughness. The design is based quite heavily on the ES6 JavaScript Promise,
+with changes where I saw fit.
 
-TODO: write this readme
+This project has taught me a huge amount about generics, thread safety, the JVM, mocks in Java, along with many other
+things, and I am very happy with the current design. I will be using this library in another project, and making any
+improvements to this library that I think of - I don't believe I will be changing the interfaces.
+
+## Performance?
+Pretty good actually. The benchmarks are low-tech but they were very enlightening, to give a tl;dr:
+
+- The biggest factor in performance for a given problem is the type of threading, e.g. the `Executor` used
+- My initial `Promise` implementation is on par with `CompletableFuture` in terms of performance (variable depending 
+on the use case), but imo it works far better for blocking logic due to it's design, as how promises are run is much
+easier and less tedious to configure, and much more flexible out of the box.
+- If you replace what could be simple logic with complicated thread switching logic, you're going to have a bad time,
+but it's the same situation with `CompletableFuture`... `Promise` just makes it much easier to do
+- If you are cognisant of the fact that chaining methods like `Promise.then()` ALL run async (like the async suffixed
+methods of `CompletionStage`) your code should be performant, if not you are probably using this library wrong.
+
+## Interoperability?
+Use promises within completion stages, write your own promise implementation, use your completion stage implementation
+as a promise, use different promise implementations together, configure how separate promises are run, go for your life.
+
+Though the promises are designed to take advantages of generics in a inherently type safe way, I wrote an implementation
+of chained resolution to an unknown depth, in the same manner as JS promises, provided by `PromiseApi.resolve()`, 
+which can also detect circular references (something which is not necessary if types are used properly).
+
+## What's the structure look like?
+Pretty much you want to look at the interfaces `Promise` and `PromiseFactory`, and you probably want to check out the
+abstract class `PromiseApi` (that requires a `PromiseFactory` implementation), but the api is entirely optional.
 
 ## JavaDoc
 [Read the API documentation HERE](https://joeycumines.github.io/java-promises/)
 
+## Changelog
+- 1.0.0 - Initial Release
 
 ## (Bad) Benchmark - 100x Mean + STDDEV (Windows 10 x64)
 Out of interest, I implemented some basic benchmarks (using `System.currentTimeMillis()`), which can be found and run 
@@ -38,27 +74,60 @@ array of child nodes, where the algorithm must find the success leaf node, which
 it has found the success case, the algorithm must find the combined string of each unique node id, in the path from the
 start to the finish.
 
-This one was interesting. The single threaded solution obviously had very variable cost, but still managed to
-outperform all others, which I can only assume is a combination of the type of task, and not having the overhead in
-creating objects. If I had run it with a considerable deeper tree, then there would probably be more benefit to
-multiple threads. It is also probably related to the fairly decent single core speed of the processor used.
+#### Single threaded control test
+The single threaded solution obviously had very variable cost, but still managed to outperform all others, which I can 
+only assume is a combination of the type of task, and not having the overhead in creating objects. If I had run it with 
+a considerably deeper tree, then there would probably be more benefit to multiple threads. It is also probably related 
+to the fairly decent single core speed of the processor used.
 
-The most interesting part of this was how well `CompletableFuture` performed, considerably more then my multi threaded
-implementation, though that could be considered a side effect of using a fixed thread pool of `40` for the multi 
-threaded test (I have run a few re-tests on that one, it seems using the fork join common pool makes it much quicker).
-If I had to guess, I would say that the difference in speed is due to the cost of the promise implementation's general
-implementation; if you look at code for the future test, in `MazeTester`, the `CompletableFuture` control logic is
-very direct. While the `PromiseApi.any` implementation used for all promise tests does support early exit, it is very
-likely sub-optimal for this particular case, where there is no internal cost in compute time to even the odds. The
-promise api must go through quite a few more callbacks, objects, and threads for each one of the future implementation.
+#### CompletableFuture and simplistic multi threaded control tests
+The `CompletableFuture` control test performed the best out of the multi threaded solutions, for reasons I mostly 
+attribute to poor test design. The multi threaded control implementation lost by a large margin, however that would seem
+to be a side effect of using a fixed thread pool of `40`, having run a few re-tests, it seems using the fork join common
+pool makes it much quicker.
 
-The promise results are below, I will let you draw your own conclusions. Both my implementation, and the implementation
-using the j8stage repo's `MyFuture` class came out on top, with mine edging ahead. Following the same line of inquiry
-as before, this result supports the conclusion that the cost is likely contributed to one or all of the number of
-callbacks, threads, or objects created, as the `PromiseStage` implementation necessitated less direct logic routes, if
-it was to encapsulate any `CompletionStage` while providing the same `Promise` functionality.
+The `4(breadth) x 11(depth)` maze test was the most enlightening, as all `Promise` implementations performed much worse
+in comparison to the controls. There are a few likely reasons for this, and if I had to guess, I would say that the 
+difference in speed is due to the cost of the promise implementation's more general implementation; if you look at code 
+for the future test, in `MazeTester`, the `CompletableFuture` control logic is very direct. While the `PromiseApi.any`
+implementation, that was used for all promise tests, does support early exit, it was very likely sub-optimal for this 
+particular case, where there is no internal cost in compute time to even the odds. The promise api must go through quite
+a few more callbacks, objects, and threads for each one of the future implementation.
+
+##### After further testing:
+Refactoring the `Promise` test case to more closely match the one for `CompletableFuture` saw the test time decrease for
+the `4(breadth) x 11(depth)` test by over a 100% across the board, which would support the previous conclusions. This
+change saw `1_RUNNABLE` come last in several tests of the `10(breadth) x 6(depth)` maze, a test where it's fork-join
+equivalent as well as the `MyFuture` promise came out on top, and which was the quickest test overall.
+
+#### The Promise implementation tests
+Both my original implementation, and the implementation using the j8stage repo's `MyFuture` class came out on top, 
+with mine edging ahead. Following the same line of inquiry as before, this result supports the conclusion that the cost
+of this test is greatly affected by the number of callbacks, threads, or possibly objects created, as the `PromiseStage` 
+implementation necessitated less direct logic routes, if it was to encapsulate any `CompletionStage` while providing the
+same `Promise` functionality.
+
+### Request-Response test - Interpreting strings as an equation
+Using a cool little algorithm I grabbed off StackOverflow, this test emulates a request-response style problem, with
+adjustable and consistent cost of work, and the ability to define the number of requests. This test supports the
+conclusion that the overhead involved with even a very large number of promises matters very little when more processing
+intensive tasks become more relevant. The test with the most costly operation `difficulty 10000 and 1000 connections`,
+which result in a work time (per request) averaging on the low end of 10ms, showed that all the asynchronous approaches
+were on par, as there was no significant difference between any of the methods using the fork join common pool.
+
+It can also be concluded that the most expensive part of the `Promise` implementation probably comes when using a large
+number of dependant promises, to perform complicated logic. The `difficulty 100 and 100000 connections` test supports
+this as well; the `Promise` implementations perform effectively the same as the `CompletableFuture` control, with only
+relatively small variations that can be correlated with the type of `Executor` used, and the style of implementation
+backing it.
 
 ### The combined results of 100 consecutive (separate), somewhat primitive benchmarks
+The results discussed above. It's worth noting that, for the test with the greatest disparity between 
+`CompletableFuture`, and any of the `Promise` implementations, adjusting the `Promise` test so that it more closely
+matched the future control resulted in a considerable time decrease, such that when run on a Thinkpad T450s, using 
+OpenJDK on Ubuntu 16.04, the `1_RUNNABLE` test case consistently beat the `CompletableFuture` control, for the same 
+`4(breadth) x 11(depth)` maze test.
+
 ```
     --generating maze for 10(breadth) x 6(depth)--
     --maze generation complete--
