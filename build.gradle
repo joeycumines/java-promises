@@ -36,7 +36,7 @@ task wrapper(type: Wrapper) {
 }
 // end::wrapper[]
 
-// give more info about unchecked and depreciation warnings
+// give more info about unchecked and deprecation warnings
 compileJava {
     options.encoding = 'UTF-8'
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
