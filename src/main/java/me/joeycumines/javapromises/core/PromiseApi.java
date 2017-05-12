@@ -488,7 +488,7 @@ public abstract class PromiseApi implements PromiseFactory {
      * @return A new {@link ArrayList} containing the resolved promises (possibly pending).
      * @throws NullPointerException If either input is null.
      */
-    public <T> ArrayList<Promise<T>> resolveAll(Iterable<?> inputIterable, Class<? extends T> type) throws NullPointerException {
+    public <T> List<Promise<T>> resolveAll(Iterable<?> inputIterable, Class<? extends T> type) throws NullPointerException {
         Objects.requireNonNull(inputIterable);
         Objects.requireNonNull(type);
 

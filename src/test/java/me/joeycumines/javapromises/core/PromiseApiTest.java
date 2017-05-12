@@ -386,7 +386,7 @@ public abstract class PromiseApiTest {
         Integer[] intArray = {1, 2, 3, 4};
         List<Integer> intList = Arrays.asList(intArray);
 
-        ArrayList<Promise<Number>> numberList = api.resolveAll(intList, Number.class);
+        List<Promise<Number>> numberList = api.resolveAll(intList, Number.class);
 
         verify(api, times(1)).resolve(1, Number.class);
         verify(api, times(1)).resolve(2, Number.class);
@@ -414,7 +414,7 @@ public abstract class PromiseApiTest {
         objectList.add(this.getApi().create((fulfill, reject) -> {
         }));
 
-        ArrayList<Promise<Object>> promiseList = this.getApi().resolveAll(objectList, Object.class);
+        List<Promise<Object>> promiseList = this.getApi().resolveAll(objectList, Object.class);
 
         assertEquals(6, objectList.size());
 

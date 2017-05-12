@@ -5,10 +5,10 @@ When my eyes started hurting immediately after opening the JavaDoc however, I de
 experience to implement my own, more friendly implementation.
 
 I wrote this library with the goal of making it something I would be happy to use in production code, and to that end I
-focused on designing flexible, sensible interfaces, that we well documented and thought out and as simple as they could
-be, while delivering the functionality I wanted. It's also very close to 100% tested, though I did frequently sacrifice
-test clarity and readability for overall thoroughness. The design is based quite heavily on the ES6 JavaScript Promise,
-with changes where I saw fit.
+focused on designing flexible, sensible interfaces, that were well documented and thought out and as simple as they
+could be, while delivering the functionality I wanted. It's also very close to 100% tested, though I did frequently
+sacrifice test clarity and readability for overall thoroughness. The design is based quite heavily on the ES6 JavaScript
+Promise, with changes where I saw fit.
 
 This project has taught me a huge amount about generics, thread safety, the JVM, mocks in Java, along with many other
 things, and I am very happy with the current design. I will be using this library in another project, and making any
