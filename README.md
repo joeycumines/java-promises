@@ -43,6 +43,7 @@ abstract class `PromiseApi` (that requires a `PromiseFactory` implementation), b
 
 ## Changelog
 - 1.0.0 - Initial Release
+    - 1.0.1 - minor change for consistent return types in PromiseApi
 
 ## (Bad) Benchmark - 100x Mean + STDDEV (Windows 10 x64)
 Out of interest, I implemented some basic benchmarks (using `System.currentTimeMillis()`), which can be found and run 
